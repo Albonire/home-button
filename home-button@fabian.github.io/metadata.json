@@ -1,0 +1,8 @@
+{
+  "uuid": "home-button@fabian.github.io",
+  "name": "Home Button",
+  "description": "Adds a button to the top panel to show the desktop.",
+  "version": 1,
+  "shell-version": [ "45", "46", "47", "48" ],
+  "url": "https://github.com/fabian/home-button"
+}

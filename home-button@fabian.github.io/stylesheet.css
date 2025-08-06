@@ -1,0 +1,24 @@
+#home-button-indicator {
+    /* Definimos un tamaño fijo para el botón */
+    width: 34px;
+    height: 34px;
+    
+    /* Centramos el icono dentro del botón */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    /* Estilos visuales */
+    border-radius: 99px;
+    background-color: rgba(255, 255, 255, 0.1);
+    transition: background-color 0.2s ease-in-out;
+}
+
+#home-button-indicator:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+}
+
+/* Definimos el tamaño del icono aquí, de forma fiable */
+#home-button-indicator .system-status-icon {
+    icon-size: 22px;
+}
