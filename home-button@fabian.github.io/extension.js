@@ -2,6 +2,7 @@
 
 import St from 'gi://St';
 import Gio from 'gi://Gio';
+import Clutter from 'gi://Clutter';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
@@ -12,15 +13,61 @@ export default class HomeButtonExtension extends Extension {
         this._icon = null;
         this._stylesheet = null;
         this._minimizedWindows = [];
+        this._settings = null;
+        this._buttonPosition = 'right'; // 'left', 'center', 'right'
     }
 
     _updateState() {
-        if (this._minimizedWindows.length > 0) {
+        const hasMinimized = this._minimizedWindows.length > 0;
+
+        if (hasMinimized) {
             this._icon.icon_name = 'view-restore-symbolic';
-            this._indicator.tooltip_text = 'Restaurar ventanas';
+            this._indicator.tooltip_text = `Restaurar ${this._minimizedWindows.length} ventana(s)`;
+            this._indicator.add_style_class_name('minimized-mode');
         } else {
-            this._icon.icon_name = 'go-home-symbolic';
-            this._indicator.tooltip_text = 'Minimizar ventanas';
+            this._icon.icon_name = 'user-home-symbolic'; // Icono más apropiado
+            this._indicator.tooltip_text = 'Minimizar todas las ventanas';
+            this._indicator.remove_style_class_name('minimized-mode');
+        }
+    }
+
+    _toggleWindows() {
+        try {
+            if (this._minimizedWindows.length > 0) {
+                this._minimizedWindows.forEach(window => {
+                    if (window.get_workspace()) {
+                        window.unminimize();
+                    }
+                });
+                this._minimizedWindows = [];
+            } else {
+                const workspaceManager = global.workspace_manager;
+                const activeWorkspace = workspaceManager.get_active_workspace();
+                const windows = activeWorkspace.list_windows();
+                this._minimizedWindows = windows.filter(w => w.can_minimize() && !w.minimized);
+                this._minimizedWindows.forEach(window => {
+                    window.minimize();
+                });
+            }
+        } catch (e) {
+            log(`Home-Button Extension: Error toggling windows: ${e}`);
+            this._minimizedWindows = [];
+        }
+        this._updateState();
+    }
+
+    _addToPanel() {
+        switch (this._buttonPosition) {
+            case 'left':
+                Main.panel._leftBox.insert_child_at_index(this._indicator, 0);
+                break;
+            case 'center':
+                Main.panel._centerBox.insert_child_at_index(this._indicator, 0);
+                break;
+            case 'right':
+            default:
+                Main.panel._rightBox.insert_child_at_index(this._indicator, 0);
+                break;
         }
     }
 
@@ -38,29 +85,15 @@ export default class HomeButtonExtension extends Extension {
 
         this._indicator.set_child(this._icon);
 
-        this._indicator.connect('button-press-event', () => {
-            try {
-                if (this._minimizedWindows.length > 0) {
-                    this._minimizedWindows.forEach(window => {
-                        if (window.get_workspace()) {
-                            window.unminimize();
-                        }
-                    });
-                    this._minimizedWindows = [];
-                } else {
-                    const workspaceManager = global.workspace_manager;
-                    const activeWorkspace = workspaceManager.get_active_workspace();
-                    const windows = activeWorkspace.list_windows();
-                    this._minimizedWindows = windows.filter(w => w.can_minimize() && !w.minimized);
-                    this._minimizedWindows.forEach(window => {
-                        window.minimize();
-                    });
-                }
-            } catch (e) {
-                log(`Home-Button Extension: Error toggling windows: ${e}`);
-                this._minimizedWindows = [];
+        this._indicator.connect('button-press-event', () => this._toggleWindows());
+
+        this._indicator.connect('key-press-event', (actor, event) => {
+            const symbol = event.get_key_symbol();
+            if (symbol === Clutter.KEY_Return || symbol === Clutter.KEY_space) {
+                this._toggleWindows();
+                return Clutter.EVENT_STOP;
             }
-            this._updateState();
+            return Clutter.EVENT_PROPAGATE;
         });
 
         // Load custom stylesheet
@@ -71,7 +104,7 @@ export default class HomeButtonExtension extends Extension {
             themeContext.get_theme().load_stylesheet(this._stylesheet);
         }
 
-        Main.panel._rightBox.insert_child_at_index(this._indicator, 0);
+        this._addToPanel();
         this._updateState();
     }
 
@@ -83,7 +116,11 @@ export default class HomeButtonExtension extends Extension {
         }
 
         if (this._indicator) {
-            Main.panel._rightBox.remove_child(this._indicator);
+            // We need to find the parent to remove the child
+            const parent = this._indicator.get_parent();
+            if (parent) {
+                parent.remove_child(this._indicator);
+            }
             this._indicator.destroy();
             this._indicator = null;
             this._icon = null;
