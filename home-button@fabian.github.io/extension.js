@@ -22,11 +22,11 @@ export default class HomeButtonExtension extends Extension {
 
         if (hasMinimized) {
             this._icon.icon_name = 'view-restore-symbolic';
-            this._indicator.tooltip_text = `Restaurar ${this._minimizedWindows.length} ventana(s)`;
+            this._indicator.tooltip_text = `Restaurar ${this._minimizedWindows.length} ventana${this._minimizedWindows.length !== 1 ? 's' : ''}`;
             this._indicator.add_style_class_name('minimized-mode');
         } else {
-            this._icon.icon_name = 'user-home-symbolic'; // Icono más apropiado
-            this._indicator.tooltip_text = 'Minimizar todas las ventanas';
+            this._icon.icon_name = 'user-home-symbolic';
+            this._indicator.tooltip_text = 'Minimizar todas las ventanas y mostrar escritorio';
             this._indicator.remove_style_class_name('minimized-mode');
         }
     }
@@ -34,26 +34,42 @@ export default class HomeButtonExtension extends Extension {
     _toggleWindows() {
         try {
             if (this._minimizedWindows.length > 0) {
-                this._minimizedWindows.forEach(window => {
+                // Restaurar ventanas en orden inverso para mantener el z-order
+                [...this._minimizedWindows].reverse().forEach(window => {
                     if (window.get_workspace()) {
                         window.unminimize();
+                        window.raise();
                     }
                 });
                 this._minimizedWindows = [];
             } else {
                 const workspaceManager = global.workspace_manager;
                 const activeWorkspace = workspaceManager.get_active_workspace();
-                const windows = activeWorkspace.list_windows();
-                this._minimizedWindows = windows.filter(w => w.can_minimize() && !w.minimized);
-                this._minimizedWindows.forEach(window => {
-                    window.minimize();
+                const windows = activeWorkspace.list_windows().filter(w => 
+                    w.can_minimize() && 
+                    !w.minimized && 
+                    w.showing_on_its_workspace() &&
+                    !w.is_skip_taskbar()
+                );
+                
+                this._minimizedWindows = windows;
+                
+                // Minimizar con pequeños delays para animación más fluida
+                windows.forEach((window, index) => {
+                    setTimeout(() => {
+                        if (window.get_workspace()) {
+                            window.minimize();
+                        }
+                    }, index * 35); // 35ms entre cada ventana
                 });
             }
         } catch (e) {
-            log(`Home-Button Extension: Error toggling windows: ${e}`);
+            console.error(`Home-Button Extension: Error toggling windows: ${e}`);
             this._minimizedWindows = [];
         }
-        this._updateState();
+        
+        // Actualizar estado después de un breve delay
+        setTimeout(() => this._updateState(), 200);
     }
 
     _addToPanel() {
@@ -66,7 +82,10 @@ export default class HomeButtonExtension extends Extension {
                 break;
             case 'right':
             default:
-                Main.panel._rightBox.insert_child_at_index(this._indicator, 0);
+                // Insertar cerca del final pero antes de algunos elementos del sistema
+                const rightBox = Main.panel._rightBox;
+                const insertIndex = Math.max(0, rightBox.get_n_children() - 2);
+                rightBox.insert_child_at_index(this._indicator, insertIndex);
                 break;
         }
     }
@@ -75,17 +94,25 @@ export default class HomeButtonExtension extends Extension {
         this._indicator = new St.Bin({
             reactive: true,
             can_focus: true,
-            track_hover: true,
-            name: 'home-button-indicator', // ID for CSS
+            track_hover: true, // Dejar que el shell maneje el hover
+            name: 'home-button-indicator',
+            style_class: 'panel-button',
         });
 
         this._icon = new St.Icon({
-            style_class: 'system-status-icon',
+            style_class: 'home-button-icon', // Usar clase personalizada
         });
 
         this._indicator.set_child(this._icon);
 
-        this._indicator.connect('button-press-event', () => this._toggleWindows());
+        // Conectar eventos
+        this._indicator.connect('button-press-event', (actor, event) => {
+            if (event.get_button() === Clutter.BUTTON_PRIMARY) {
+                this._toggleWindows();
+                return Clutter.EVENT_STOP;
+            }
+            return Clutter.EVENT_PROPAGATE;
+        });
 
         this._indicator.connect('key-press-event', (actor, event) => {
             const symbol = event.get_key_symbol();
@@ -96,7 +123,7 @@ export default class HomeButtonExtension extends Extension {
             return Clutter.EVENT_PROPAGATE;
         });
 
-        // Load custom stylesheet
+        // Cargar stylesheet personalizado
         const themeContext = St.ThemeContext.get_for_stage(global.stage);
         const stylesheetFile = Gio.File.new_for_path(this.path + '/stylesheet.css');
         if (stylesheetFile.query_exists(null)) {
@@ -106,17 +133,18 @@ export default class HomeButtonExtension extends Extension {
 
         this._addToPanel();
         this._updateState();
+
+        console.log('Home Button Extension enabled');
     }
 
     disable() {
-        // Unload custom stylesheet
+        // Descargar stylesheet personalizado
         if (this._stylesheet) {
             St.ThemeContext.get_for_stage(global.stage).get_theme().unload_stylesheet(this._stylesheet);
             this._stylesheet = null;
         }
 
         if (this._indicator) {
-            // We need to find the parent to remove the child
             const parent = this._indicator.get_parent();
             if (parent) {
                 parent.remove_child(this._indicator);
@@ -125,6 +153,8 @@ export default class HomeButtonExtension extends Extension {
             this._indicator = null;
             this._icon = null;
         }
+        
         this._minimizedWindows = [];
+        console.log('Home Button Extension disabled');
     }
 }

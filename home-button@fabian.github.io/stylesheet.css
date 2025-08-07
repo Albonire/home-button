@@ -1,71 +1,184 @@
+/* Estilo base del botón home */
 #home-button-indicator {
-    /* Usar padding en lugar de tamaño fijo para mejor adaptabilidad */
-    padding: 4px 8px;
-    min-width: 28px;
-    min-height: 28px;
+    /* Diseño más minimalista y moderno */
+    padding: 8px 12px;
+    min-width: 40px;
+    min-height: 40px;
     
-    /* Centramos usando margin auto en lugar de flexbox */
-    text-align: center;
+    /* Bordes más redondeados para look moderno */
+    border-radius: 12px;
     
-    /* Bordes redondeados más sutiles */
-    border-radius: 6px;
+    /* Fondo glassmorphism sutil */
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.08) 0%, 
+        rgba(255, 255, 255, 0.04) 100%);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     
-    /* Fondo más sutil que se adapte mejor al tema */
-    background-color: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    /* Transiciones más elegantes */
+    transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
     
-    /* Transiciones más suaves */
-    transition: all 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    
-    /* Sombra sutil para dar profundidad */
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    /* Sombra más sutil y elegante */
+    box-shadow: 
+        0 2px 8px rgba(0, 0, 0, 0.05),
+        0 1px 2px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
+/* Efecto hover más elegante */
 #home-button-indicator:hover {
-    background-color: rgba(255, 255, 255, 0.15);
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.16) 0%, 
+        rgba(255, 255, 255, 0.08) 100%);
     border-color: rgba(255, 255, 255, 0.2);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-    transform: translateY(-1px);
+    
+    /* Efecto de elevación */
+    box-shadow: 
+        0 4px 16px rgba(0, 0, 0, 0.08),
+        0 2px 4px rgba(0, 0, 0, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    
+    transform: translateY(-1px) scale(1.02);
 }
 
+/* Efecto click más sutil */
 #home-button-indicator:active {
-    background-color: rgba(255, 255, 255, 0.25);
-    transform: translateY(0);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.12) 0%, 
+        rgba(255, 255, 255, 0.06) 100%);
+    transform: translateY(0) scale(0.98);
+    
+    box-shadow: 
+        0 1px 4px rgba(0, 0, 0, 0.12),
+        inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Icono con mejor spacing */
-#home-button-indicator .system-status-icon {
-    icon-size: 18px;
-    margin: 2px;
+/* Icono personalizado para evitar conflictos con el tema */
+#home-button-indicator .home-button-icon {
+    font-size: 24px !important; /* Forzar tamaño */
+    margin: 0;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
 }
 
-/* Estados para diferentes modos */
+/* Estado cuando hay ventanas minimizadas - usando tonos neutros */
 #home-button-indicator.minimized-mode {
-    background-color: rgba(138, 226, 52, 0.2);
-    border-color: rgba(138, 226, 52, 0.4);
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.20) 0%, 
+        rgba(255, 255, 255, 0.15) 100%);
+    border-color: rgba(255, 255, 255, 0.3);
+    
+    /* Resplandor blanco sutil */
+    box-shadow: 
+        0 0 20px rgba(255, 255, 255, 0.1),
+        0 2px 8px rgba(0, 0, 0, 0.08),
+        0 1px 2px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 #home-button-indicator.minimized-mode:hover {
-    background-color: rgba(138, 226, 52, 0.3);
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.30) 0%, 
+        rgba(255, 255, 255, 0.25) 100%);
+    border-color: rgba(255, 255, 255, 0.4);
+    
+    box-shadow: 
+        0 0 24px rgba(255, 255, 255, 0.15),
+        0 4px 16px rgba(0, 0, 0, 0.12),
+        0 2px 4px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-/* Añadir indicador visual cuando hay ventanas minimizadas */
+/* Indicador visual más elegante y neutro */
 #home-button-indicator.minimized-mode::after {
     content: '';
     position: absolute;
     top: -2px;
     right: -2px;
-    width: 8px;
-    height: 8px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
-    background-color: #8ae234;
-    border: 2px solid rgba(0, 0, 0, 0.3);
+    
+    /* Gradiente blanco/gris moderno */
+    background: radial-gradient(circle at center, #FFFFFF 0%, #E0E0E0 100%);
+    
+    /* Borde más sutil */
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    
+    /* Sombra para profundidad */
+    box-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    
+    /* Animación sutil de pulso */
+    animation: pulse-indicator 2s ease-in-out infinite;
 }
 
-/* Adaptación para tema oscuro */
+/* Animación de pulso para el indicador */
+ @keyframes pulse-indicator {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.05);
+    }
+}
+
+/* Adaptación mejorada para tema oscuro */
  @media (prefers-color-scheme: dark) {
     #home-button-indicator {
-        background-color: rgba(255, 255, 255, 0.1);
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.06) 0%, 
+            rgba(255, 255, 255, 0.02) 100%);
+        border-color: rgba(255, 255, 255, 0.08);
+    }
+    
+    #home-button-indicator:hover {
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.12) 0%, 
+            rgba(255, 255, 255, 0.06) 100%);
+        border-color: rgba(255, 255, 255, 0.16);
+    }
+    
+    #home-button-indicator.minimized-mode {
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.2) 0%, 
+            rgba(255, 255, 255, 0.1) 100%);
+    }
+}
+
+/* Estilo para tema claro específico */
+ @media (prefers-color-scheme: light) {
+    #home-button-indicator {
+        background: linear-gradient(135deg, 
+            rgba(0, 0, 0, 0.04) 0%, 
+            rgba(0, 0, 0, 0.02) 100%);
+        border-color: rgba(0, 0, 0, 0.08);
+    }
+    
+    #home-button-indicator:hover {
+        background: linear-gradient(135deg, 
+            rgba(0, 0, 0, 0.08) 0%, 
+            rgba(0, 0, 0, 0.04) 100%);
+        border-color: rgba(0, 0, 0, 0.12);
+    }
+}
+
+/* Mejora para accesibilidad - focus visible neutro */
+#home-button-indicator:focus {
+    outline: 2px solid rgba(255, 255, 255, 0.7);
+    outline-offset: 2px;
+}
+
+/* Responsive design para diferentes DPI */
+ @media (-webkit-device-pixel-ratio: 2) {
+    #home-button-indicator .home-button-icon {
+        font-size: 26px !important;
+    }
+    
+    #home-button-indicator {
+        min-width: 44px;
+        min-height: 44px;
     }
 }
