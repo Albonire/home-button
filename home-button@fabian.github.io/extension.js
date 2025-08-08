@@ -3,7 +3,7 @@
 import St from 'gi://St';
 import Gio from 'gi://Gio';
 import Clutter from 'gi://Clutter';
-import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
+import { Extension, gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 export default class HomeButtonExtension extends Extension {
@@ -14,19 +14,22 @@ export default class HomeButtonExtension extends Extension {
         this._stylesheet = null;
         this._minimizedWindows = [];
         this._settings = null;
-        this._buttonPosition = 'right'; // 'left', 'center', 'right'
+        this._settingsConnections = new Map();
     }
 
     _updateState() {
         const hasMinimized = this._minimizedWindows.length > 0;
+        const showCount = this._settings.get_boolean('show-count-in-tooltip');
 
         if (hasMinimized) {
             this._icon.icon_name = 'view-restore-symbolic';
-            this._indicator.tooltip_text = `Restaurar ${this._minimizedWindows.length} ventana${this._minimizedWindows.length !== 1 ? 's' : ''}`;
+            this._indicator.tooltip_text = showCount 
+                ? _(`Restaurar ${this._minimizedWindows.length} ventana${this._minimizedWindows.length !== 1 ? 's' : ''}`)
+                : _('Restaurar ventanas');
             this._indicator.add_style_class_name('minimized-mode');
         } else {
             this._icon.icon_name = 'user-home-symbolic';
-            this._indicator.tooltip_text = 'Minimizar todas las ventanas y mostrar escritorio';
+            this._indicator.tooltip_text = _('Minimizar todas las ventanas y mostrar escritorio');
             this._indicator.remove_style_class_name('minimized-mode');
         }
     }
@@ -34,7 +37,6 @@ export default class HomeButtonExtension extends Extension {
     _toggleWindows() {
         try {
             if (this._minimizedWindows.length > 0) {
-                // Restaurar ventanas en orden inverso para mantener el z-order
                 [...this._minimizedWindows].reverse().forEach(window => {
                     if (window.get_workspace()) {
                         window.unminimize();
@@ -44,23 +46,36 @@ export default class HomeButtonExtension extends Extension {
                 this._minimizedWindows = [];
             } else {
                 const workspaceManager = global.workspace_manager;
-                const activeWorkspace = workspaceManager.get_active_workspace();
-                const windows = activeWorkspace.list_windows().filter(w => 
+                const includeAllWorkspaces = this._settings.get_boolean('include-all-workspaces');
+                const excludeOnTop = this._settings.get_boolean('exclude-always-on-top');
+                
+                let windowsToConsider = [];
+                if (includeAllWorkspaces) {
+                    const nWorkspaces = workspaceManager.get_n_workspaces();
+                    for (let i = 0; i < nWorkspaces; i++) {
+                        const workspace = workspaceManager.get_workspace_by_index(i);
+                        windowsToConsider.push(...workspace.list_windows());
+                    }
+                } else {
+                    const activeWorkspace = workspaceManager.get_active_workspace();
+                    windowsToConsider = activeWorkspace.list_windows();
+                }
+
+                this._minimizedWindows = windowsToConsider.filter(w => 
                     w.can_minimize() && 
                     !w.minimized && 
                     w.showing_on_its_workspace() &&
-                    !w.is_skip_taskbar()
+                    !w.is_skip_taskbar() &&
+                    (!excludeOnTop || !w.is_above())
                 );
                 
-                this._minimizedWindows = windows;
-                
-                // Minimizar con pequeños delays para animación más fluida
-                windows.forEach((window, index) => {
+                const animationDelay = this._settings.get_int('animation-delay');
+                this._minimizedWindows.forEach((window, index) => {
                     setTimeout(() => {
                         if (window.get_workspace()) {
                             window.minimize();
                         }
-                    }, index * 35); // 35ms entre cada ventana
+                    }, index * animationDelay);
                 });
             }
         } catch (e) {
@@ -68,12 +83,19 @@ export default class HomeButtonExtension extends Extension {
             this._minimizedWindows = [];
         }
         
-        // Actualizar estado después de un breve delay
         setTimeout(() => this._updateState(), 200);
     }
 
     _addToPanel() {
-        switch (this._buttonPosition) {
+        if (this._indicator) {
+            const parent = this._indicator.get_parent();
+            if (parent) {
+                parent.remove_child(this._indicator);
+            }
+        }
+
+        const position = this._settings.get_string('button-position');
+        switch (position) {
             case 'left':
                 Main.panel._leftBox.insert_child_at_index(this._indicator, 0);
                 break;
@@ -82,7 +104,6 @@ export default class HomeButtonExtension extends Extension {
                 break;
             case 'right':
             default:
-                // Insertar cerca del final pero antes de algunos elementos del sistema
                 const rightBox = Main.panel._rightBox;
                 const insertIndex = Math.max(0, rightBox.get_n_children() - 2);
                 rightBox.insert_child_at_index(this._indicator, insertIndex);
@@ -90,22 +111,58 @@ export default class HomeButtonExtension extends Extension {
         }
     }
 
+    _applyIconSize() {
+        const iconSize = this._settings.get_int('button-icon-size');
+        if (this._icon) {
+            this._icon.style = `font-size: ${iconSize}px;`;
+        }
+    }
+
+    _connectSettings() {
+        const settingsToConnect = [
+            'button-position',
+            'button-icon-size',
+            'show-count-in-tooltip'
+        ];
+
+        settingsToConnect.forEach(key => {
+            const connection = this._settings.connect(`changed::${key}`, () => {
+                if (key === 'button-position') {
+                    this._addToPanel();
+                } else if (key === 'button-icon-size') {
+                    this._applyIconSize();
+                } else {
+                    this._updateState();
+                }
+            });
+            this._settingsConnections.set(key, connection);
+        });
+    }
+
+    _disconnectSettings() {
+        this._settingsConnections.forEach((connection) => {
+            this._settings.disconnect(connection);
+        });
+        this._settingsConnections.clear();
+    }
+
     enable() {
+        this._settings = this.getSettings();
+
         this._indicator = new St.Bin({
             reactive: true,
             can_focus: true,
-            track_hover: true, // Dejar que el shell maneje el hover
+            track_hover: true,
             name: 'home-button-indicator',
             style_class: 'panel-button',
         });
 
         this._icon = new St.Icon({
-            style_class: 'home-button-icon', // Usar clase personalizada
+            style_class: 'home-button-icon',
         });
 
         this._indicator.set_child(this._icon);
 
-        // Conectar eventos
         this._indicator.connect('button-press-event', (actor, event) => {
             if (event.get_button() === Clutter.BUTTON_PRIMARY) {
                 this._toggleWindows();
@@ -123,7 +180,6 @@ export default class HomeButtonExtension extends Extension {
             return Clutter.EVENT_PROPAGATE;
         });
 
-        // Cargar stylesheet personalizado
         const themeContext = St.ThemeContext.get_for_stage(global.stage);
         const stylesheetFile = Gio.File.new_for_path(this.path + '/stylesheet.css');
         if (stylesheetFile.query_exists(null)) {
@@ -131,30 +187,31 @@ export default class HomeButtonExtension extends Extension {
             themeContext.get_theme().load_stylesheet(this._stylesheet);
         }
 
+        this._connectSettings();
         this._addToPanel();
+        this._applyIconSize();
         this._updateState();
 
         console.log('Home Button Extension enabled');
     }
 
     disable() {
-        // Descargar stylesheet personalizado
+        this._disconnectSettings();
+
         if (this._stylesheet) {
             St.ThemeContext.get_for_stage(global.stage).get_theme().unload_stylesheet(this._stylesheet);
             this._stylesheet = null;
         }
 
         if (this._indicator) {
-            const parent = this._indicator.get_parent();
-            if (parent) {
-                parent.remove_child(this._indicator);
-            }
             this._indicator.destroy();
             this._indicator = null;
-            this._icon = null;
         }
         
+        this._icon = null;
         this._minimizedWindows = [];
+        this._settings = null;
         console.log('Home Button Extension disabled');
     }
 }
+
