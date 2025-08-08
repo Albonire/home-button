@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.home-button" path="/org/gnome/shell/extensions/home-button/">
+    
+    <key name="button-position" type="s">
+      <choices>
+        <choice value="left"/>
+        <choice value="center"/>
+        <choice value="right"/>
+      </choices>
+      <default>"right"</default>
+      <summary>Button position in panel</summary>
+      <description>Position where the home button will be placed in the top panel</description>
+    </key>
+    
+    <key name="animation-delay" type="i">
+      <range min="0" max="200"/>
+      <default>35</default>
+      <summary>Animation delay between windows</summary>
+      <description>Delay in milliseconds between minimizing each window for smoother animation</description>
+    </key>
+    
+    <key name="show-count-in-tooltip" type="b">
+      <default>true</default>
+      <summary>Show window count in tooltip</summary>
+      <description>Whether to show the number of minimized windows in the button tooltip</description>
+    </key>
+    
+    <key name="include-all-workspaces" type="b">
+      <default>false</default>
+      <summary>Include windows from all workspaces</summary>
+      <description>When true, minimizes/restores windows from all workspaces instead of just the current one</description>
+    </key>
+    
+    <key name="exclude-always-on-top" type="b">
+      <default>true</default>
+      <summary>Exclude always-on-top windows</summary>
+      <description>Whether to exclude always-on-top windows from minimization</description>
+    </key>
+    
+    <key name="button-icon-size" type="i">
+      <range min="16" max="32"/>
+      <default>24</default>
+      <summary>Button icon size</summary>
+      <description>Size of the home button icon in pixels</description>
+    </key>
+    
+  </schema>
+</schemalist>
