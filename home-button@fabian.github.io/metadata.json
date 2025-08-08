@@ -1,8 +1,9 @@
 {
   "uuid": "home-button@fabian.github.io",
   "name": "Home Button",
-  "description": "Adds a button to the top panel to show the desktop.",
-  "version": 1,
+  "description": "Adds a smart button to the top panel to show the desktop with customizable settings.",
+  "version": 2,
   "shell-version": [ "45", "46", "47", "48" ],
-  "url": "https://github.com/fabian/home-button"
+  "url": "https://github.com/fabian/home-button",
+  "settings-schema": "org.gnome.shell.extensions.home-button"
 }
