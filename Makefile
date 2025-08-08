@@ -9,6 +9,10 @@ SRC_DIR = $(UUID)
 # Directorio de instalación de extensiones de GNOME Shell para el usuario local
 INSTALL_DIR = $(HOME)/.local/share/gnome-shell/extensions/$(UUID)
 
+# Directorio de schemas
+SCHEMA_DIR = $(HOME)/.local/share/glib-2.0/schemas
+SCHEMA_FILE = org.gnome.shell.extensions.home-button.gschema.xml
+
 # Nombre del archivo ZIP para distribución
 ZIP_FILE = $(UUID).zip
 
@@ -16,28 +20,37 @@ ZIP_FILE = $(UUID).zip
 .DEFAULT_GOAL := help
 
 # Evita que 'make' se confunda si existe un archivo con el mismo nombre que un target
-.PHONY: help install uninstall enable disable log zip clean
+.PHONY: help install uninstall enable disable log zip clean compile-schema prefs
 
 help:
 	@echo "Gestor de la extensión Home Button"
 	@echo "----------------------------------"
 	@echo "Usa los siguientes comandos:"
-	@echo "  make install    - Instala la extensión (o la actualiza)."
-	@echo "  make uninstall  - Desinstala la extensión."
-	@echo "  make enable     - Activa la extensión."
-	@echo "  make disable    - Desactiva la extensión."
-	@echo "  make log        - Muestra los logs de GNOME Shell en tiempo real."
-	@echo "  make zip        - Crea un paquete .zip para subir a extensions.gnome.org."
-	@echo "  make clean      - Elimina los archivos generados (como el .zip)."
+	@echo "  make install        - Instala la extensión (o la actualiza)."
+	@echo "  make uninstall      - Desinstala la extensión."
+	@echo "  make enable         - Activa la extensión."
+	@echo "  make disable        - Desactiva la extensión."
+	@echo "  make prefs          - Abre las preferencias de la extensión."
+	@echo "  make compile-schema - Compila el schema de configuración."
+	@echo "  make log            - Muestra los logs de GNOME Shell en tiempo real."
+	@echo "  make zip            - Crea un paquete .zip para subir a extensions.gnome.org."
+	@echo "  make clean          - Elimina los archivos generados (como el .zip)."
 	@echo ""
 	@echo "IMPORTANTE: Para aplicar cambios, recarga GNOME Shell manualmente:"
 	@echo "  1. Presiona Alt + F2"
 	@echo "  2. Escribe 'r' en el diálogo"
 	@echo "  3. Presiona Enter"
 
+# Compila el schema de configuración
+compile-schema:
+	@echo "Compilando schema de configuración..."
+	@mkdir -p $(SCHEMA_DIR)
+	@cp schemas/$(SCHEMA_FILE) $(SCHEMA_DIR)/
+	@glib-compile-schemas $(SCHEMA_DIR)
+	@echo "Schema compilado correctamente."
 
 # Instala la extensión copiando los archivos al directorio de GNOME
-install: uninstall
+install: uninstall compile-schema
 	@echo "Instalando extensión en: $(INSTALL_DIR)"
 	@cp -r $(SRC_DIR) $(INSTALL_DIR)
 	@echo "¡Instalación completa!"
@@ -58,9 +71,10 @@ disable:
 	@echo "Desactivando extensión: $(UUID)"
 	@gnome-extensions disable $(UUID)
 
-# El comando 'restart' ha sido eliminado porque 'gnome-shell --replace'
-# no es fiable en sesiones Wayland, que son el estándar actual.
-# Usa el método manual: Alt+F2, 'r', Enter.
+# Abre las preferencias de la extensión
+prefs:
+	@echo "Abriendo preferencias de la extensión..."
+	@gnome-extensions prefs $(UUID)
 
 # Muestra los logs del sistema para depurar la extensión
 log:
@@ -68,12 +82,17 @@ log:
 	@journalctl -f -o cat /usr/bin/gnome-shell
 
 # Crea un archivo .zip listo para ser distribuido
-zip: clean
+zip: clean compile-schema
 	@echo "Creando paquete de distribución: $(ZIP_FILE)"
 	@cd $(SRC_DIR) && zip -r ../$(ZIP_FILE) . -x "*.git*" "*LICENSE*" "*README.md*"
+	@mkdir -p temp-schemas
+	@cp schemas/$(SCHEMA_FILE) temp-schemas/
+	@cd temp-schemas && zip -r ../$(ZIP_FILE) $(SCHEMA_FILE)
+	@rm -rf temp-schemas
 	@echo "Paquete creado en $(ZIP_FILE)"
 
 # Limpia los archivos generados
 clean:
 	@echo "Limpiando archivos generados..."
 	@rm -f $(ZIP_FILE)
+	@echo "Limpieza completada."
