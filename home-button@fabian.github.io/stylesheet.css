@@ -1,6 +1,6 @@
 /* Estilo base del botón home */
 #home-button-indicator {
-    padding: 8.5px 6px 8.5px 0;
+    padding: 8.1px 6px 8.1px 0;
     min-width: 40px;
     min-height: 40px;
     background: transparent;
@@ -9,7 +9,6 @@
     transition: none;
 }
 
-/* Sin efectos visuales en hover o active */
 #home-button-indicator:hover,
 #home-button-indicator:active {
     background: transparent;
@@ -17,14 +16,12 @@
     transform: none;
 }
 
-/* Icono personalizado */
 #home-button-indicator .home-button-icon {
     font-size: 24px !important;
     margin: 0;
     filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
 }
 
-/* Sin cambios para el modo minimizado */
 #home-button-indicator.minimized-mode {
     background: transparent;
     border: none;
@@ -37,22 +34,19 @@
     box-shadow: none;
 }
 
-/* Eliminar el indicador visual de punto */
 #home-button-indicator.minimized-mode::after {
     content: none;
 }
 
-/* Sin animación */
 @keyframes pulse-indicator {
     /* No animation */
 }
 
-/* Sin outline en focus para transparencia total */
 #home-button-indicator:focus {
     outline: none;
 }
 
-/* Responsive design para diferentes DPI */
+/* responsive design for different DPI */
 @media (-webkit-device-pixel-ratio: 2) {
     #home-button-indicator .home-button-icon {
         font-size: 26px !important;
