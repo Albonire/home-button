@@ -3,10 +3,17 @@
 import Adw from 'gi://Adw';
 import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
+
+// Corrected and more robust imports
 import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
+import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
+
 
 export default class HomeButtonPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
+        // Set the gettext domain
+        // this.initTranslations(); // This is often needed
+
         // Crear la página principal
         const page = new Adw.PreferencesPage({
             title: 'General',

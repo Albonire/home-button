@@ -24,8 +24,8 @@ export default class HomeButtonExtension extends Extension {
         if (hasMinimized) {
             this._icon.icon_name = 'view-restore-symbolic';
             this._indicator.tooltip_text = showCount 
-                ? _(`Restaurar ${this._minimizedWindows.length} ventana${this._minimizedWindows.length !== 1 ? 's' : ''}`)
-                : _('Restaurar ventanas');
+                ? _(`Restore ${this._minimizedWindows.length} window${this._minimizedWindows.length !== 1 ? 's' : ''}`)
+                : _('Restore windows');
             this._indicator.add_style_class_name('minimized-mode');
         } else {
             this._icon.icon_name = 'user-home-symbolic';
@@ -34,57 +34,120 @@ export default class HomeButtonExtension extends Extension {
         }
     }
 
-    _toggleWindows() {
-        try {
-            if (this._minimizedWindows.length > 0) {
-                [...this._minimizedWindows].reverse().forEach(window => {
-                    if (window.get_workspace()) {
-                        window.unminimize();
-                        window.raise();
-                    }
-                });
-                this._minimizedWindows = [];
-            } else {
-                const workspaceManager = global.workspace_manager;
-                const includeAllWorkspaces = this._settings.get_boolean('include-all-workspaces');
-                const excludeOnTop = this._settings.get_boolean('exclude-always-on-top');
-                
-                let windowsToConsider = [];
-                if (includeAllWorkspaces) {
-                    const nWorkspaces = workspaceManager.get_n_workspaces();
-                    for (let i = 0; i < nWorkspaces; i++) {
-                        const workspace = workspaceManager.get_workspace_by_index(i);
-                        windowsToConsider.push(...workspace.list_windows());
-                    }
-                } else {
-                    const activeWorkspace = workspaceManager.get_active_workspace();
-                    windowsToConsider = activeWorkspace.list_windows();
-                }
 
-                this._minimizedWindows = windowsToConsider.filter(w => 
-                    w.can_minimize() && 
-                    !w.minimized && 
-                    w.showing_on_its_workspace() &&
-                    !w.is_skip_taskbar() &&
-                    (!excludeOnTop || !w.is_above())
-                );
+    // VERSIÓN DE EMERGENCIA - Reemplazar temporalmente tu _toggleWindows()
+// Esta versión incluye MUCHO debugging
+
+_toggleWindows() {
+    console.log("🚀 Home-Button: _toggleWindows() iniciado");
+    
+    try {
+        if (this._minimizedWindows.length > 0) {
+            console.log(`📤 Restaurando ${this._minimizedWindows.length} ventanas`);
+            [...this._minimizedWindows].reverse().forEach((window, index) => {
+                if (window.get_workspace()) {
+                    console.log(`  Restaurando: ${window.get_title()}`);
+                    window.unminimize();
+                    window.raise();
+                }
+            });
+            this._minimizedWindows = [];
+        } else {
+            console.log("📥 Iniciando minimización...");
+            
+            const workspaceManager = global.workspace_manager;
+            const includeAllWorkspaces = this._settings.get_boolean('include-all-workspaces');
+            
+            console.log(`   Include all workspaces: ${includeAllWorkspaces}`);
+            
+            let windowsToConsider = [];
+            if (includeAllWorkspaces) {
+                const nWorkspaces = workspaceManager.get_n_workspaces();
+                console.log(`   Analizing ${nWorkspaces} workspaces`);
+                for (let i = 0; i < nWorkspaces; i++) {
+                    const workspace = workspaceManager.get_workspace_by_index(i);
+                    const workspaceWindows = workspace.list_windows();
+                    console.log(`   Workspace ${i}: ${workspaceWindows.length} ventanas`);
+                    windowsToConsider.push(...workspaceWindows);
+                }
+            } else {
+                const activeWorkspace = workspaceManager.get_active_workspace();
+                windowsToConsider = activeWorkspace.list_windows();
+                console.log(`   Actual workspace: ${windowsToConsider.length} windows`);
+            }
+
+            console.log(`  Total windows found: ${windowsToConsider.length}`);
+
+            // filters
+            this._minimizedWindows = windowsToConsider.filter(w => {
+                if (!w) {
+                    console.log("   ❌ Null window");
+                    return false;
+                }
                 
-                const animationDelay = this._settings.get_int('animation-delay');
+                const title = w.get_title() || "No title";
+                const isMinimized = w.minimized;
+                
+                console.log(`   🔍 Parsing: "${title}" - Minimized: ${isMinimized}`);
+                
+                if (isMinimized) {
+                    console.log(`   ⏭️  Skipping "${title}" (already minimized)`);
+                    return false;
+                }
+                
+                console.log(`   ✅ "${title}" will be minimized`);
+                return true;
+            });
+
+            console.log(`🎯 Windows to minimize: ${this._minimizedWindows.length}`);
+
+            if (this._minimizedWindows.length === 0) {
+                console.log("⚠️  No windows to minimize.");
+            } else {
+                // MINIMIZATION simple
                 this._minimizedWindows.forEach((window, index) => {
-                    setTimeout(() => {
-                        if (window.get_workspace()) {
-                            window.minimize();
-                        }
-                    }, index * animationDelay);
+                    const title = window.get_title() || "Sin título";
+                    console.log(`  🔽 Minimizing: "${title}"`);
+                    
+                    try {
+                        window.minimize();
+                        console.log(`    ✅ "${title}" correctly minimized`);
+                    } catch (error) {
+                        console.log(`    ❌ Error minimizing "${title}": ${error}`);
+                    }
                 });
             }
-        } catch (e) {
-            console.error(`Home-Button Extension: Error toggling windows: ${e}`);
-            this._minimizedWindows = [];
         }
-        
-        setTimeout(() => this._updateState(), 200);
+    } catch (e) {
+        console.error(`🚨 Home-Button Extension: Error en _toggleWindows(): ${e}`);
+        console.error(`🚨 Stack trace: ${e.stack}`);
+        this._minimizedWindows = [];
     }
+    
+    console.log("🏁 _toggleWindows() completado");
+    
+    setTimeout(() => {
+        console.log("🔄 Updating state...");
+        this._updateState();
+    }, 200);
+}
+
+_restoreWindows() {
+    [...this._minimizedWindows].reverse().forEach(window => {
+        if (window.get_workspace()) {
+            try {
+                if (window.minimized) {
+                    window.unminimize();
+                } else {
+                    window.show();
+                }
+                window.raise();
+            } catch (error) {
+                console.log(`Error restoring window: ${error}`);
+            }
+        }
+    });
+}
 
     _addToPanel() {
         if (this._indicator) {
@@ -146,9 +209,15 @@ export default class HomeButtonExtension extends Extension {
         this._settingsConnections.clear();
     }
 
-    enable() {
+enable() {
+    console.log("🚀 Home Button Extension enabled");
+    
+    try {
+        console.log("📋 Loading settings...");
         this._settings = this.getSettings();
+        console.log("✅ Settings loaded");
 
+        console.log("🎨 Creating indicator...");
         this._indicator = new St.Bin({
             reactive: true,
             can_focus: true,
@@ -156,44 +225,106 @@ export default class HomeButtonExtension extends Extension {
             name: 'home-button-indicator',
             style_class: 'panel-button',
         });
+        console.log("✅ Indicator created");
 
+        console.log("🖼️ Creating icon...");
         this._icon = new St.Icon({
             style_class: 'home-button-icon',
         });
+        console.log("✅ Icon created");
 
         this._indicator.set_child(this._icon);
+        console.log("✅ Icon added to indicator");
 
-        this._indicator.connect('button-press-event', (actor, event) => {
+        console.log("🖱️ Connecting event listeners...");
+        
+        const buttonPressConnection = this._indicator.connect('button-press-event', (actor, event) => {
+            console.log("🖱️ Button pressed");
+            console.log(`   Button: ${event.get_button()}`);
+            console.log(`   Primary button: ${Clutter.BUTTON_PRIMARY}`);
+            
             if (event.get_button() === Clutter.BUTTON_PRIMARY) {
+                console.log("✅ Click valid - executing _toggleWindows()");
                 this._toggleWindows();
                 return Clutter.EVENT_STOP;
+            } else {
+                console.log("⏭️ Click ignored (not primary button)");
             }
             return Clutter.EVENT_PROPAGATE;
         });
+        console.log(`✅ Button-press-event conected (ID: ${buttonPressConnection})`);
 
-        this._indicator.connect('key-press-event', (actor, event) => {
+        const keyPressConnection = this._indicator.connect('key-press-event', (actor, event) => {
+            console.log("⌨️ key pressed");
             const symbol = event.get_key_symbol();
+            console.log(`   Key: ${symbol}`);
+            
             if (symbol === Clutter.KEY_Return || symbol === Clutter.KEY_space) {
+                console.log("✅ Valid key - executing _toggleWindows()");
                 this._toggleWindows();
                 return Clutter.EVENT_STOP;
             }
             return Clutter.EVENT_PROPAGATE;
         });
+        console.log(`✅ Key-press-event conected (ID: ${keyPressConnection})`);
 
+        this._indicator.connect('enter-event', () => {
+            console.log(" Mouse entered the button");
+        });
+        
+        this._indicator.connect('leave-event', () => {
+            console.log(" Mouse came out of the button");
+        });
+
+        console.log(" Charging stylesheet...");
         const themeContext = St.ThemeContext.get_for_stage(global.stage);
         const stylesheetFile = Gio.File.new_for_path(this.path + '/stylesheet.css');
         if (stylesheetFile.query_exists(null)) {
             this._stylesheet = stylesheetFile;
             themeContext.get_theme().load_stylesheet(this._stylesheet);
+            console.log(" Stylesheet loaded");
+        } else {
+            console.log(" Stylesheet not found");
         }
 
+        console.log(" Conecting settings...");
         this._connectSettings();
-        this._addToPanel();
-        this._applyIconSize();
-        this._updateState();
+        console.log(" Settings conected");
 
-        console.log('Home Button Extension enabled');
+        console.log(" Adding to panel...");
+        this._addToPanel();
+        console.log(" Added to panel");
+
+        console.log(" Applying icon size...");
+        this._applyIconSize();
+        console.log(" Size applied");
+
+        console.log(" Updating initial status...");
+        this._updateState();
+        console.log(" Updated status");
+
+        console.log(" Home Button Extension enabled succesfully");
+        
+        // TEST: add timeout
+        setTimeout(() => {
+            console.log("   TEST: Checking status after 2 seconds...");
+            console.log(`   Indicator exists: ${!!this._indicator}`);
+            console.log(`   Icon exists: ${!!this._icon}`);
+            console.log(`   Settings exists: ${!!this._settings}`);
+            
+            // funcionality test
+            if (this._indicator && this._indicator.reactive) {
+                console.log("✅ Indicator is reactive and ready for clicks");
+            } else {
+                console.log("❌ PROBLEM: Indicator is not reactive");
+            }
+        }, 2000);
+        
+    } catch (error) {
+        console.error(` ERROR en enable(): ${error}`);
+        console.error(` Stack trace: ${error.stack}`);
     }
+}
 
     disable() {
         this._disconnectSettings();
