@@ -9,7 +9,6 @@ import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/
 
 export default class HomeButtonPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
-        // Crear la página principal
         const page = new Adw.PreferencesPage({
             title: 'General',
             icon_name: 'dialog-information-symbolic',
@@ -23,7 +22,7 @@ export default class HomeButtonPreferences extends ExtensionPreferences {
         });
         page.add(appearanceGroup);
 
-        // Posición del botón
+        // button position
         const positionRow = new Adw.ComboRow({
             title: 'Button Position',
             subtitle: 'Where to place the button in the top panel',
@@ -37,7 +36,6 @@ export default class HomeButtonPreferences extends ExtensionPreferences {
         
         appearanceGroup.add(positionRow);
 
-        // Tamaño del icono - usando Adjustment para control preciso
         const iconSizeAdjustment = new Gtk.Adjustment({
             lower: 16,
             upper: 32,
@@ -54,14 +52,12 @@ export default class HomeButtonPreferences extends ExtensionPreferences {
         });
         appearanceGroup.add(iconSizeRow);
 
-        // Grupo de comportamiento
         const behaviorGroup = new Adw.PreferencesGroup({
             title: 'Behavior',
             description: 'Configure how the home button works',
         });
         page.add(behaviorGroup);
 
-        // Delay de animación - usando Adjustment
         const animationAdjustment = new Gtk.Adjustment({
             lower: 0,
             upper: 200,
@@ -112,7 +108,7 @@ export default class HomeButtonPreferences extends ExtensionPreferences {
         
         const linkButton = new Gtk.LinkButton({
             label: 'GitHub Repository',
-            uri: 'https://github.com/fabian/home-button',
+            uri: 'https://github.com/Albonire/home-button',
             valign: Gtk.Align.CENTER,
         });
         aboutRow.add_suffix(linkButton);
