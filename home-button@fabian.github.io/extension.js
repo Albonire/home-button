@@ -35,119 +35,82 @@ export default class HomeButtonExtension extends Extension {
     }
 
 
-    // VERSIÓN DE EMERGENCIA - Reemplazar temporalmente tu _toggleWindows()
-// Esta versión incluye MUCHO debugging
-
-_toggleWindows() {
-    console.log("🚀 Home-Button: _toggleWindows() iniciado");
+    _toggleWindows() {
+        try {
+            const settings = this._settings || this.getSettings?.();
+            const excludeOnTop = settings ? settings.get_boolean('exclude-always-on-top') : true;
+            const includeAllWorkspaces = settings ? settings.get_boolean('include-all-workspaces') : false;
     
-    try {
-        if (this._minimizedWindows.length > 0) {
-            console.log(`📤 Restaurando ${this._minimizedWindows.length} ventanas`);
-            [...this._minimizedWindows].reverse().forEach((window, index) => {
-                if (window.get_workspace()) {
-                    console.log(`  Restaurando: ${window.get_title()}`);
-                    window.unminimize();
-                    window.raise();
+            // Recoger workspaces según preferencia
+            const wm = global.workspace_manager;
+            const workspaces = includeAllWorkspaces
+                ? Array.from({length: wm.n_workspaces}, (_, i) => wm.get_workspace_by_index(i))
+                : [wm.get_active_workspace()];
+    
+            let inspected = 0;
+            log('[Home Button] Inicio _toggleWindows() — includeAllWorkspaces=' + includeAllWorkspaces + ', excludeOnTop=' + excludeOnTop);
+    
+            for (const ws of workspaces) {
+                // list_windows() devuelve Meta.Window[] en la mayoría de versiones
+                let wins = [];
+                if (ws && typeof ws.list_windows === 'function') {
+                    wins = ws.list_windows();
+                } else {
+                    // fallback seguro: intentar global
+                    wins = global.get_window_actors ? global.get_window_actors().map(a => a.meta_window).filter(Boolean) : [];
                 }
-            });
-            this._minimizedWindows = [];
-        } else {
-            console.log("📥 Iniciando minimización...");
-            
-            const workspaceManager = global.workspace_manager;
-            const includeAllWorkspaces = this._settings.get_boolean('include-all-workspaces');
-            
-            console.log(`   Include all workspaces: ${includeAllWorkspaces}`);
-            
-            let windowsToConsider = [];
-            if (includeAllWorkspaces) {
-                const nWorkspaces = workspaceManager.get_n_workspaces();
-                console.log(`   Analizing ${nWorkspaces} workspaces`);
-                for (let i = 0; i < nWorkspaces; i++) {
-                    const workspace = workspaceManager.get_workspace_by_index(i);
-                    const workspaceWindows = workspace.list_windows();
-                    console.log(`   Workspace ${i}: ${workspaceWindows.length} ventanas`);
-                    windowsToConsider.push(...workspaceWindows);
-                }
-            } else {
-                const activeWorkspace = workspaceManager.get_active_workspace();
-                windowsToConsider = activeWorkspace.list_windows();
-                console.log(`   Actual workspace: ${windowsToConsider.length} windows`);
-            }
-
-            console.log(`  Total windows found: ${windowsToConsider.length}`);
-
-            // filters
-            this._minimizedWindows = windowsToConsider.filter(w => {
-                if (!w) {
-                    console.log("   ❌ Null window");
-                    return false;
-                }
-                
-                const title = w.get_title() || "No title";
-                const isMinimized = w.minimized;
-                
-                console.log(`   🔍 Parsing: "${title}" - Minimized: ${isMinimized}`);
-                
-                if (isMinimized) {
-                    console.log(`   ⏭️  Skipping "${title}" (already minimized)`);
-                    return false;
-                }
-                
-                console.log(`   ✅ "${title}" will be minimized`);
-                return true;
-            });
-
-            console.log(`🎯 Windows to minimize: ${this._minimizedWindows.length}`);
-
-            if (this._minimizedWindows.length === 0) {
-                console.log("⚠️  No windows to minimize.");
-            } else {
-                // MINIMIZATION simple
-                this._minimizedWindows.forEach((window, index) => {
-                    const title = window.get_title() || "Sin título";
-                    console.log(`  🔽 Minimizing: "${title}"`);
-                    
+    
+                for (const w of wins) {
+                    inspected++;
                     try {
-                        window.minimize();
-                        console.log(`    ✅ "${title}" correctly minimized`);
-                    } catch (error) {
-                        console.log(`    ❌ Error minimizing "${title}": ${error}`);
+                        const meta = w; // w ya es Meta.Window
+                        // Obtén propiedades con comprobaciones de seguridad
+                        const title = (meta.get_title && meta.get_title()) || (meta.title ? meta.title.toString() : '<no-title>');
+                        const wtype = (meta.get_window_type && meta.get_window_type()) ? meta.get_window_type() : (meta.window_type || 'unknown');
+                        const minimized = ('minimized' in meta) ? meta.minimized : (typeof meta.is_minimized === 'function' ? meta.is_minimized() : false);
+                        // modal / always-on-top checks (si existen)
+                        const isModal = (typeof meta.is_modal === 'function') ? meta.is_modal() : (meta.get_modal ? meta.get_modal() : false);
+                        const isOnTop = (typeof meta.is_above === 'function') ? meta.is_above() : (meta.is_always_on_top ? meta.is_always_on_top() : false);
+    
+                        log(`[Home Button] Ventana: "${title}" type=${wtype} modal=${isModal} atop=${isOnTop} minimized=${minimized}`);
+    
+                        // Aplicar reglas: si la config excluye always-on-top y la ventana está arriba, salta
+                        if (excludeOnTop && isOnTop) {
+                            log(`[Home Button] - Omitida (always-on-top): ${title}`);
+                            continue;
+                        }
+    
+                        // Intento principal: minimizar/restaurar si existen los métodos
+                        if (!minimized) {
+                            if (typeof meta.minimize === 'function') {
+                                meta.minimize();
+                                log(`[Home Button] - minimize() llamado: ${title}`);
+                            } else if (typeof meta.minimized !== 'undefined') {
+                                try { meta.minimized = true; log(`[Home Button] - propiedad minimized = true: ${title}`); } catch(e) {}
+                            } else {
+                                log(`[Home Button] - No se pudo minimizar (no API): ${title}`);
+                            }
+                        } else {
+                            if (typeof meta.unminimize === 'function') {
+                                meta.unminimize();
+                                log(`[Home Button] - unminimize() llamado: ${title}`);
+                            } else {
+                                log(`[Home Button] - Ya minimizada o no soporta unminimize(): ${title}`);
+                            }
+                        }
+    
+                    } catch (we) {
+                        log(`[Home Button] Error procesando ventana: ${we}`);
                     }
-                });
-            }
+                } // for wins
+            } // for workspaces
+    
+            log(`[Home Button] _toggleWindows() inspeccionó ${inspected} ventanas`);
+        } catch (e) {
+            log(`[Home Button] ERROR en _toggleWindows(): ${e}`);
         }
-    } catch (e) {
-        console.error(`🚨 Home-Button Extension: Error en _toggleWindows(): ${e}`);
-        console.error(`🚨 Stack trace: ${e.stack}`);
-        this._minimizedWindows = [];
     }
     
-    console.log("🏁 _toggleWindows() completado");
-    
-    setTimeout(() => {
-        console.log("🔄 Updating state...");
-        this._updateState();
-    }, 200);
-}
-
-_restoreWindows() {
-    [...this._minimizedWindows].reverse().forEach(window => {
-        if (window.get_workspace()) {
-            try {
-                if (window.minimized) {
-                    window.unminimize();
-                } else {
-                    window.show();
-                }
-                window.raise();
-            } catch (error) {
-                console.log(`Error restoring window: ${error}`);
-            }
-        }
-    });
-}
 
     _addToPanel() {
         if (this._indicator) {
