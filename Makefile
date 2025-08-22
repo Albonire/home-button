@@ -30,7 +30,7 @@ help:
 	@echo "  make uninstall      - Uninstall the extension."
 	@echo "  make enable         - Activate extension."
 	@echo "  make disable        - Desactivate extension."
-	@echo "  make prefs          - Abre las preferencias de la extensión."
+	@echo "  make prefs          - Open extension preferences."
 	@echo "  make compile-schema - Compila el schema de configuración."
 	@echo "  make log            - Muestra los logs de GNOME Shell en tiempo real."
 	@echo "  make zip            - Crea un paquete .zip para subir a extensions.gnome.org."
