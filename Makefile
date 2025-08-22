@@ -26,7 +26,7 @@ help:
 	@echo "Gestor de la extensión Home Button"
 	@echo "----------------------------------"
 	@echo "Usa los siguientes comandos:"
-	@echo "  make install        - Install the extension (o la actualiza)."
+	@echo "  make install        - Install the extension (or update)."
 	@echo "  make uninstall      - Desinstala la extensión."
 	@echo "  make enable         - Activa la extensión."
 	@echo "  make disable        - Desactiva la extensión."
