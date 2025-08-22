@@ -27,7 +27,7 @@ help:
 	@echo "----------------------------------"
 	@echo "Usa los siguientes comandos:"
 	@echo "  make install        - Install the extension (or update)."
-	@echo "  make uninstall      - Desinstala la extensión."
+	@echo "  make uninstall      - Uninstall the extension."
 	@echo "  make enable         - Activa la extensión."
 	@echo "  make disable        - Desactiva la extensión."
 	@echo "  make prefs          - Abre las preferencias de la extensión."
