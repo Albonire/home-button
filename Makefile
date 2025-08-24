@@ -33,7 +33,7 @@ help:
 	@echo "  make prefs          - Open extension preferences."
 	@echo "  make compile-schema - Compile configuration schema."
 	@echo "  make log            - Show GNOME shell extensions logs in real time."
-	@echo "  make zip            - Crea un paquete .zip para subir a extensions.gnome.org."
+	@echo "  make zip            - Create a zip file to uplead to extensions.gnome.org."
 	@echo "  make clean          - Elimina los archivos generados (como el .zip)."
 	@echo ""
 	@echo "IMPORTANTE: Para aplicar cambios, recarga GNOME Shell manualmente:"
