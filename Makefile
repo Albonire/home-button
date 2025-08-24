@@ -23,7 +23,7 @@ ZIP_FILE = $(UUID).zip
 .PHONY: help install uninstall enable disable log zip clean compile-schema prefs
 
 help:
-	@echo "Gestor de la extensión Home Button"
+	@echo "Home Button extension Manager"
 	@echo "----------------------------------"
 	@echo "Usa los siguientes comandos:"
 	@echo "  make install        - Install the extension (or update)."
