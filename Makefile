@@ -49,7 +49,7 @@ compile-schema:
 	@echo "Schema compilado correctamente."
 
 install: uninstall compile-schema
-	@echo "Instalando extensión en: $(INSTALL_DIR)"
+	@echo "Installing extension in: $(INSTALL_DIR)"
 	@cp -r $(SRC_DIR) $(INSTALL_DIR)
 	@echo "¡Instalación completa!"
 	@echo "Para aplicar los cambios, recarga GNOME Shell (Alt+F2, 'r', Enter) y activa la extensión con 'make enable'."
