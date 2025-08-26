@@ -41,7 +41,6 @@ help:
 	@echo "  2. Escribe 'r' en el diálogo"
 	@echo "  3. Presiona Enter"
 
-# Compila el schema de configuración
 compile-schema:
 	@echo "Compilando schema de configuración..."
 	@mkdir -p $(SCHEMA_DIR)
@@ -49,7 +48,6 @@ compile-schema:
 	@glib-compile-schemas $(SCHEMA_DIR)
 	@echo "Schema compilado correctamente."
 
-# Instala la extensión copiando los archivos al directorio de GNOME
 install: uninstall compile-schema
 	@echo "Instalando extensión en: $(INSTALL_DIR)"
 	@cp -r $(SRC_DIR) $(INSTALL_DIR)
