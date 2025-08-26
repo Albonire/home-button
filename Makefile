@@ -54,14 +54,12 @@ install: uninstall compile-schema
 	@echo "¡Instalación completa!"
 	@echo "Para aplicar los cambios, recarga GNOME Shell (Alt+F2, 'r', Enter) y activa la extensión con 'make enable'."
 
-# Desinstala la extensión eliminando su directorio
 uninstall:
 	@echo "Removing previous installation if it exists..."
 	@rm -rf $(INSTALL_DIR)
 
-# Activa la extensión usando la herramienta de línea de comandos
 enable:
-	@echo "Activando extensión: $(UUID)"
+	@echo "Activating extension: $(UUID)"
 	@gnome-extensions enable $(UUID)
 
 # Desactiva la extensión
