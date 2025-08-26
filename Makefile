@@ -34,7 +34,7 @@ help:
 	@echo "  make compile-schema - Compile configuration schema."
 	@echo "  make log            - Show GNOME shell extensions logs in real time."
 	@echo "  make zip            - Create a zip file to uplead to extensions.gnome.org."
-	@echo "  make clean          - Elimina los archivos generados (como el .zip)."
+	@echo "  make clean          - Delete generated files (like the .zip)."
 	@echo ""
 	@echo "IMPORTANTE: Para aplicar cambios, recarga GNOME Shell manualmente:"
 	@echo "  1. Presiona Alt + F2"
