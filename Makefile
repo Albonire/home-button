@@ -42,11 +42,11 @@ help:
 	@echo "  3. Presiona Enter"
 
 compile-schema:
-	@echo "Compilando schema de configuración..."
+	@echo "Compiling schema configuration..."
 	@mkdir -p $(SCHEMA_DIR)
 	@cp schemas/$(SCHEMA_FILE) $(SCHEMA_DIR)/
 	@glib-compile-schemas $(SCHEMA_DIR)
-	@echo "Schema compilado correctamente."
+	@echo "Schema correctly compiled."
 
 install: uninstall compile-schema
 	@echo "Installing extension in: $(INSTALL_DIR)"
