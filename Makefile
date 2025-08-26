@@ -58,7 +58,7 @@ install: uninstall compile-schema
 
 # Desinstala la extensión eliminando su directorio
 uninstall:
-	@echo "Eliminando instalación anterior si existe..."
+	@echo "Removing previous installation if it exists..."
 	@rm -rf $(INSTALL_DIR)
 
 # Activa la extensión usando la herramienta de línea de comandos
