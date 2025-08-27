@@ -62,33 +62,28 @@ enable:
 	@echo "Activating extension: $(UUID)"
 	@gnome-extensions enable $(UUID)
 
-# Desactiva la extensión
 disable:
-	@echo "Desactivando extensión: $(UUID)"
+	@echo "Disabling extension: $(UUID)"
 	@gnome-extensions disable $(UUID)
 
-# Abre las preferencias de la extensión
 prefs:
-	@echo "Abriendo preferencias de la extensión..."
+	@echo "Opening extension pref..."
 	@gnome-extensions prefs $(UUID)
 
-# Muestra los logs del sistema para depurar la extensión
 log:
-	@echo "Mostrando logs de GNOME Shell... (Presiona Ctrl+C para salir)"
+	@echo "Displaying GNOME Shell logs... (Presiona Ctrl+C para salir)"
 	@journalctl -f -o cat /usr/bin/gnome-shell
 
-# Crea un archivo .zip listo para ser distribuido
 zip: clean compile-schema
-	@echo "Creando paquete de distribución: $(ZIP_FILE)"
+	@echo "Creating distribution zip: $(ZIP_FILE)"
 	@cd $(SRC_DIR) && zip -r ../$(ZIP_FILE) . -x "*.git*" "*LICENSE*" "*README.md*"
 	@mkdir -p temp-schemas
 	@cp schemas/$(SCHEMA_FILE) temp-schemas/
 	@cd temp-schemas && zip -r ../$(ZIP_FILE) $(SCHEMA_FILE)
 	@rm -rf temp-schemas
-	@echo "Paquete creado en $(ZIP_FILE)"
+	@echo "Zip created in $(ZIP_FILE)"
 
-# Limpia los archivos generados
 clean:
-	@echo "Limpiando archivos generados..."
+	@echo "Cleaning generated files..."
 	@rm -f $(ZIP_FILE)
-	@echo "Limpieza completada."
+	@echo "Clean completed."
