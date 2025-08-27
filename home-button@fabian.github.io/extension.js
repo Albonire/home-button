@@ -2,6 +2,7 @@
 
 import St from 'gi://St';
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 import Clutter from 'gi://Clutter';
 import { Extension, gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
@@ -16,6 +17,7 @@ export default class HomeButtonExtension extends Extension {
         this._minimizedWindows = [];
         this._settings = null;
         this._settingsConnections = new Map();
+        this._animationTimeoutId = null;
     }
 
     _updateState() {
@@ -35,43 +37,78 @@ export default class HomeButtonExtension extends Extension {
         }
     }
 
-    _toggleWindows() {
-        if (this._minimizedWindows.length > 0) {
-            // Restore the windows we previously minimized
-            this._minimizedWindows.forEach(win => {
-                // Check if the window still exists before trying to unminimize
+    _processWindowList(windows, action) {
+        const delay = this._settings.get_int('animation-delay');
+
+        if (delay === 0) {
+            windows.forEach(win => {
                 if (win.get_compositor_private()) {
-                    win.unminimize();
+                    if (action === 'minimize') win.minimize();
+                    else win.unminimize();
                 }
             });
+            return;
+        }
+
+        let i = 0;
+        const process = () => {
+            if (i < windows.length) {
+                const win = windows[i];
+                if (win.get_compositor_private()) {
+                    if (action === 'minimize') win.minimize();
+                    else win.unminimize();
+                }
+                i++;
+                return GLib.SOURCE_CONTINUE; // Continue the timer
+            } else {
+                this._animationTimeoutId = null;
+                return GLib.SOURCE_REMOVE; // Stop the timer
+            }
+        };
+
+        this._animationTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, delay, process);
+    }
+
+    _toggleWindows() {
+        if (this._animationTimeoutId) {
+            GLib.Source.remove(this._animationTimeoutId);
+            this._animationTimeoutId = null;
+        }
+
+        if (this._minimizedWindows.length > 0) {
+            this._processWindowList([...this._minimizedWindows], 'unminimize');
             this._minimizedWindows = [];
         } else {
-            // Minimize visible windows
-            const windows = global.get_window_actors().map(a => a.meta_window);
             const settings = this.getSettings();
             const excludeOnTop = settings.get_boolean('exclude-always-on-top');
+            const allWorkspaces = settings.get_boolean('include-all-workspaces');
 
-            this._minimizedWindows = windows.filter(w => {
+            let windowsToFilter = [];
+            if (allWorkspaces) {
+                const workspaceManager = global.workspace_manager;
+                const nWorkspaces = workspaceManager.get_n_workspaces();
+                for (let i = 0; i < nWorkspaces; i++) {
+                    const workspace = workspaceManager.get_workspace_by_index(i);
+                    windowsToFilter.push(...workspace.list_windows());
+                }
+            } else {
+                windowsToFilter = global.get_window_actors().map(a => a.meta_window);
+            }
+
+            this._minimizedWindows = windowsToFilter.filter(w => {
                 if (!w || w.minimized || w.is_skip_taskbar()) {
                     return false;
                 }
-
-                // Filter out non-normal windows (like docks, desktops)
                 if (w.get_window_type() !== Meta.WindowType.NORMAL) {
                     return false;
                 }
-
-                // Optionally filter 'always on top' windows
                 if (excludeOnTop && w.is_above()) {
                     return false;
                 }
-
                 return true;
             });
 
-            this._minimizedWindows.forEach(win => {
-                win.minimize();
-            });
+            this._processWindowList([...this._minimizedWindows], 'minimize');
         }
 
         this._updateState();
@@ -185,6 +222,11 @@ export default class HomeButtonExtension extends Extension {
     }
 
     disable() {
+        if (this._animationTimeoutId) {
+            GLib.Source.remove(this._animationTimeoutId);
+            this._animationTimeoutId = null;
+        }
+
         this._disconnectSettings();
 
         if (this._stylesheet) {
