@@ -25,7 +25,7 @@ ZIP_FILE = $(UUID).zip
 help:
 	@echo "Home Button extension Manager"
 	@echo "----------------------------------"
-	@echo "Usa los siguientes comandos:"
+	@echo "Use the following commands:"
 	@echo "  make install        - Install the extension (or update)."
 	@echo "  make uninstall      - Uninstall the extension."
 	@echo "  make enable         - Activate extension."
