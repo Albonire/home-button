@@ -38,11 +38,17 @@
       <description>Whether to exclude always-on-top windows from minimization</description>
     </key>
     
-    <key name="button-icon-size" type="i">
-      <range min="16" max="32"/>
-      <default>24</default>
-      <summary>Button icon size</summary>
-      <description>Size of the home button icon in pixels</description>
+    <key name="icon-size" type="d">
+      <range min="16" max="64"/>
+      <default>24.0</default>
+      <summary>Icon Size</summary>
+      <description>The size of the icon in the panel, in pixels.</description>
+    </key>
+
+    <key name="icon-path" type="s">
+      <default>'user-home-symbolic'</default>
+      <summary>Icon Path or Name</summary>
+      <description>Can be a symbolic icon name from the current theme (e.g., 'user-home-symbolic') or an absolute path to an image file.</description>
     </key>
     
   </schema>
