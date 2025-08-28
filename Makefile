@@ -36,10 +36,10 @@ help:
 	@echo "  make zip            - Create a zip file to uplead to extensions.gnome.org."
 	@echo "  make clean          - Delete generated files (like the .zip)."
 	@echo ""
-	@echo "IMPORTANTE: Para aplicar cambios, recarga GNOME Shell manualmente:"
-	@echo "  1. Presiona Alt + F2"
-	@echo "  2. Escribe 'r' en el diálogo"
-	@echo "  3. Presiona Enter"
+	@echo "IMPORTANT: To apply changes, manually reload GNOME Shell:"
+	@echo "  1. Press Alt + F2"
+	@echo "  2. Type 'r' in the text field."
+	@echo "  3. Press enter"
 
 compile-schema:
 	@echo "Compiling schema configuration..."
