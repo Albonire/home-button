@@ -3,135 +3,137 @@
 import Adw from 'gi://Adw';
 import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
-
-// Corrected imports - removed problematic gettext import
 import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 export default class HomeButtonPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
-        const page = new Adw.PreferencesPage({
-            title: 'General',
-            icon_name: 'dialog-information-symbolic',
-        });
+        this._settings = this.getSettings();
+
+        const page = new Adw.PreferencesPage();
         window.add(page);
 
-        // Grupo de apariencia
+        // Appearance Group
         const appearanceGroup = new Adw.PreferencesGroup({
             title: 'Appearance',
-            description: 'Customize the look and position of the home button',
+            description: 'Customize the look and position of the home button.',
         });
         page.add(appearanceGroup);
 
-        // button position
-        const positionRow = new Adw.ComboRow({
-            title: 'Button Position',
-            subtitle: 'Where to place the button in the top panel',
+        // -- Icon Path Chooser --
+        const iconRow = new Adw.ActionRow({
+            title: 'Custom Icon',
+            subtitle: 'Choose a custom icon or reset to default.',
         });
-        
-        const positionModel = new Gtk.StringList();
-        positionModel.append('Left');
-        positionModel.append('Center');
-        positionModel.append('Right');
-        positionRow.model = positionModel;
-        
-        appearanceGroup.add(positionRow);
+        appearanceGroup.add(iconRow);
 
-        const iconSizeAdjustment = new Gtk.Adjustment({
-            lower: 16,
-            upper: 32,
-            step_increment: 2,
-            page_increment: 4,
-            value: 24,
+        const iconButton = new Gtk.Button({
+            label: 'Browse...',
+            valign: Gtk.Align.CENTER,
         });
-        
+        iconRow.add_suffix(iconButton);
+        iconRow.activatable_widget = iconButton;
+        iconButton.connect('clicked', () => {
+            this._selectIcon(window);
+        });
+
+        // -- Icon Size --
         const iconSizeRow = new Adw.SpinRow({
             title: 'Icon Size',
-            subtitle: 'Size of the home button icon in pixels',
-            adjustment: iconSizeAdjustment,
+            subtitle: 'Size of the icon in pixels.',
+            adjustment: new Gtk.Adjustment({
+                lower: 16,
+                upper: 64,
+                step_increment: 1,
+            }),
             digits: 0,
         });
         appearanceGroup.add(iconSizeRow);
 
+        // -- Button Position --
+        const positionRow = new Adw.ComboRow({
+            title: 'Button Position',
+            subtitle: 'Where to place the button in the top panel.',
+            model: Gtk.StringList.new(['Left', 'Center', 'Right']),
+        });
+        appearanceGroup.add(positionRow);
+
+
+        // Behavior Group
         const behaviorGroup = new Adw.PreferencesGroup({
             title: 'Behavior',
-            description: 'Configure how the home button works',
+            description: 'Configure how the home button works.',
         });
         page.add(behaviorGroup);
 
-        const animationAdjustment = new Gtk.Adjustment({
-            lower: 0,
-            upper: 200,
-            step_increment: 5,
-            page_increment: 10,
-            value: 35,
-        });
-        
         const animationDelayRow = new Adw.SpinRow({
             title: 'Animation Delay',
-            subtitle: 'Milliseconds between minimizing each window (0 = instant)',
-            adjustment: animationAdjustment,
+            subtitle: 'Milliseconds between minimizing each window (0 = instant).',
+            adjustment: new Gtk.Adjustment({
+                lower: 0,
+                upper: 200,
+                step_increment: 5,
+            }),
             digits: 0,
         });
         behaviorGroup.add(animationDelayRow);
 
-        // Incluir todos los workspaces
         const allWorkspacesRow = new Adw.SwitchRow({
             title: 'All Workspaces',
-            subtitle: 'Minimize/restore windows from all workspaces instead of just current',
+            subtitle: 'Minimize/restore windows from all workspaces.',
         });
         behaviorGroup.add(allWorkspacesRow);
 
-        // Excluir ventanas always-on-top
         const excludeOnTopRow = new Adw.SwitchRow({
             title: 'Exclude Always-on-Top',
-            subtitle: 'Skip windows that are set to always stay on top',
+            subtitle: 'Skip windows that are set to always stay on top.',
         });
         behaviorGroup.add(excludeOnTopRow);
 
-        // Mostrar conteo en tooltip
         const showCountRow = new Adw.SwitchRow({
             title: 'Show Window Count',
-            subtitle: 'Display number of minimized windows in button tooltip',
+            subtitle: 'Display number of minimized windows in the tooltip.',
         });
         behaviorGroup.add(showCountRow);
 
-        // Grupo de información
-        const infoGroup = new Adw.PreferencesGroup({
-            title: 'About',
-        });
-        page.add(infoGroup);
+        // Bind settings
+        this._settings.bind('icon-size', iconSizeRow, 'value', Gio.SettingsBindFlags.DEFAULT);
+        this._settings.bind('animation-delay', animationDelayRow, 'value', Gio.SettingsBindFlags.DEFAULT);
+        this._settings.bind('include-all-workspaces', allWorkspacesRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        this._settings.bind('exclude-always-on-top', excludeOnTopRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        this._settings.bind('show-count-in-tooltip', showCountRow, 'active', Gio.SettingsBindFlags.DEFAULT);
 
-        const aboutRow = new Adw.ActionRow({
-            title: 'Home Button Extension',
-            subtitle: 'A smart desktop toggle for GNOME Shell',
-        });
-        
-        const linkButton = new Gtk.LinkButton({
-            label: 'GitHub Repository',
-            uri: 'https://github.com/Albonire/home-button',
-            valign: Gtk.Align.CENTER,
-        });
-        aboutRow.add_suffix(linkButton);
-        infoGroup.add(aboutRow);
-
-        // Conectar settings
-        const settings = this.getSettings();
-
-        // Posición del botón
-        const currentPosition = settings.get_string('button-position');
+        // Special handling for ComboRow
+        const currentPosition = this._settings.get_string('button-position');
         const positions = ['left', 'center', 'right'];
         positionRow.selected = positions.indexOf(currentPosition);
-        
         positionRow.connect('notify::selected', () => {
-            const selectedPosition = positions[positionRow.selected];
-            settings.set_string('button-position', selectedPosition);
+            this._settings.set_string('button-position', positions[positionRow.selected]);
+        });
+    }
+
+    _selectIcon(parentWindow) {
+        const dialog = new Gtk.FileChooserDialog({
+            title: 'Select an Icon',
+            transient_for: parentWindow,
+            modal: true,
+            action: Gtk.FileChooserAction.OPEN,
         });
 
-        // Otras configuraciones usando bind
-        settings.bind('button-icon-size', iconSizeRow, 'value', Gio.SettingsBindFlags.DEFAULT);
-        settings.bind('animation-delay', animationDelayRow, 'value', Gio.SettingsBindFlags.DEFAULT);
-        settings.bind('include-all-workspaces', allWorkspacesRow, 'active', Gio.SettingsBindFlags.DEFAULT);
-        settings.bind('exclude-always-on-top', excludeOnTopRow, 'active', Gio.SettingsBindFlags.DEFAULT);
-        settings.bind('show-count-in-tooltip', showCountRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        const filter = new Gtk.FileFilter();
+        filter.add_pixbuf_formats();
+        dialog.set_filter(filter);
+
+        dialog.add_button('Cancel', Gtk.ResponseType.CANCEL);
+        dialog.add_button('Select', Gtk.ResponseType.ACCEPT);
+
+        dialog.connect('response', (dlg, response) => {
+            if (response === Gtk.ResponseType.ACCEPT) {
+                const file = dialog.get_file();
+                this._settings.set_string('icon-path', file.get_path());
+            }
+            dialog.destroy();
+        });
+
+        dialog.show();
     }
 }
