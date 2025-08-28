@@ -1,4 +1,3 @@
-/* Estilo base del botón home */
 #home-button-indicator {
     padding: 8.1px 6px 8.1px 0;
     min-width: 40px;
@@ -18,10 +17,19 @@
 }
 
 #home-button-indicator .home-button-icon {
-    font-size: 24px !important;
     margin: 0;
     filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
 }
+
+#home-button-indicator .home-button-icon.icon-size-16 { font-size: 16px; }
+#home-button-indicator .home-button-icon.icon-size-18 { font-size: 18px; }
+#home-button-indicator .home-button-icon.icon-size-20 { font-size: 20px; }
+#home-button-indicator .home-button-icon.icon-size-22 { font-size: 22px; }
+#home-button-indicator .home-button-icon.icon-size-24 { font-size: 24px; }
+#home-button-indicator .home-button-icon.icon-size-26 { font-size: 26px; }
+#home-button-indicator .home-button-icon.icon-size-28 { font-size: 28px; }
+#home-button-indicator .home-button-icon.icon-size-30 { font-size: 30px; }
+#home-button-indicator .home-button-icon.icon-size-32 { font-size: 32px; }
 
 #home-button-indicator.minimized-mode {
     background: transparent;
@@ -49,9 +57,15 @@
 
 /* responsive design for different DPI */
 @media (-webkit-device-pixel-ratio: 2) {
-    #home-button-indicator .home-button-icon {
-        font-size: 26px !important;
-    }
+    #home-button-indicator .home-button-icon.icon-size-16 { font-size: 18px; }
+    #home-button-indicator .home-button-icon.icon-size-18 { font-size: 20px; }
+    #home-button-indicator .home-button-icon.icon-size-20 { font-size: 22px; }
+    #home-button-indicator .home-button-icon.icon-size-22 { font-size: 24px; }
+    #home-button-indicator .home-button-icon.icon-size-24 { font-size: 26px; }
+    #home-button-indicator .home-button-icon.icon-size-26 { font-size: 28px; }
+    #home-button-indicator .home-button-icon.icon-size-28 { font-size: 30px; }
+    #home-button-indicator .home-button-icon.icon-size-30 { font-size: 32px; }
+    #home-button-indicator .home-button-icon.icon-size-32 { font-size: 34px; }
     
     #home-button-indicator {
         min-width: 44px;
