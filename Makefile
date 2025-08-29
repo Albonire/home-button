@@ -1,25 +1,16 @@
-# Makefile para el desarrollo de la Extensión de GNOME Shell "Home Button"
-
-# El UUID es el identificador único. ¡Debe coincidir con metadata.json y el nombre del directorio!
 UUID = home-button@fabian.github.io
 
-# Directorio fuente del proyecto
 SRC_DIR = $(UUID)
 
-# Directorio de instalación de extensiones de GNOME Shell para el usuario local
 INSTALL_DIR = $(HOME)/.local/share/gnome-shell/extensions/$(UUID)
 
-# Directorio de schemas
 SCHEMA_DIR = $(HOME)/.local/share/glib-2.0/schemas
 SCHEMA_FILE = org.gnome.shell.extensions.home-button.gschema.xml
 
-# Nombre del archivo ZIP para distribución
 ZIP_FILE = $(UUID).zip
 
-# El objetivo por defecto será 'help' para mostrar los comandos disponibles
 .DEFAULT_GOAL := help
 
-# Evita que 'make' se confunda si existe un archivo con el mismo nombre que un target
 .PHONY: help install uninstall enable disable log zip clean compile-schema prefs
 
 help:

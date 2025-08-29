@@ -8,6 +8,7 @@ import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/
 export default class HomeButtonPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         this._settings = this.getSettings();
+        this._window = window;
 
         const page = new Adw.PreferencesPage();
         window.add(page);
@@ -19,10 +20,9 @@ export default class HomeButtonPreferences extends ExtensionPreferences {
         });
         page.add(appearanceGroup);
 
-        // -- Icon Path Chooser --
         const iconRow = new Adw.ActionRow({
             title: 'Custom Icon',
-            subtitle: 'Choose a custom icon or reset to default.',
+            subtitle: 'Choose a custom icon file.',
         });
         appearanceGroup.add(iconRow);
 
@@ -32,31 +32,22 @@ export default class HomeButtonPreferences extends ExtensionPreferences {
         });
         iconRow.add_suffix(iconButton);
         iconRow.activatable_widget = iconButton;
-        iconButton.connect('clicked', () => {
-            this._selectIcon(window);
-        });
+        iconButton.connect('clicked', () => this._selectIcon());
 
-        // -- Icon Size --
         const iconSizeRow = new Adw.SpinRow({
             title: 'Icon Size',
             subtitle: 'Size of the icon in pixels.',
-            adjustment: new Gtk.Adjustment({
-                lower: 16,
-                upper: 64,
-                step_increment: 1,
-            }),
+            adjustment: new Gtk.Adjustment({ lower: 16, upper: 64, step_increment: 1 }),
             digits: 0,
         });
         appearanceGroup.add(iconSizeRow);
 
-        // -- Button Position --
         const positionRow = new Adw.ComboRow({
             title: 'Button Position',
             subtitle: 'Where to place the button in the top panel.',
             model: Gtk.StringList.new(['Left', 'Center', 'Right']),
         });
         appearanceGroup.add(positionRow);
-
 
         // Behavior Group
         const behaviorGroup = new Adw.PreferencesGroup({
@@ -68,11 +59,7 @@ export default class HomeButtonPreferences extends ExtensionPreferences {
         const animationDelayRow = new Adw.SpinRow({
             title: 'Animation Delay',
             subtitle: 'Milliseconds between minimizing each window (0 = instant).',
-            adjustment: new Gtk.Adjustment({
-                lower: 0,
-                upper: 200,
-                step_increment: 5,
-            }),
+            adjustment: new Gtk.Adjustment({ lower: 0, upper: 200, step_increment: 5 }),
             digits: 0,
         });
         behaviorGroup.add(animationDelayRow);
@@ -95,6 +82,46 @@ export default class HomeButtonPreferences extends ExtensionPreferences {
         });
         behaviorGroup.add(showCountRow);
 
+        // Reset Group
+        const resetGroup = new Adw.PreferencesGroup({
+            title: 'Reset',
+        });
+        page.add(resetGroup);
+
+        const resetRow = new Adw.ActionRow({
+            title: 'Reset All Settings',
+            subtitle: 'Restore settings to their default values.',
+        });
+        resetGroup.add(resetRow);
+
+        const resetButton = new Gtk.Button({
+            label: 'Reset',
+            valign: Gtk.Align.CENTER,
+        });
+        resetButton.add_css_class('destructive-action');
+        resetRow.add_suffix(resetButton);
+        resetRow.activatable_widget = resetButton;
+        resetButton.connect('clicked', () => this._showResetDialog());
+
+        // About Group
+        const aboutGroup = new Adw.PreferencesGroup({
+            title: 'About',
+        });
+        page.add(aboutGroup);
+
+        const aboutRow = new Adw.ActionRow({
+            title: 'Home Button Extension',
+            subtitle: 'A smart desktop toggle for GNOME Shell',
+        });
+        aboutGroup.add(aboutRow);
+
+        const linkButton = new Gtk.LinkButton({
+            label: 'GitHub Repository',
+            uri: 'https://github.com/Albonire/home-button',
+            valign: Gtk.Align.CENTER,
+        });
+        aboutRow.add_suffix(linkButton);
+
         // Bind settings
         this._settings.bind('icon-size', iconSizeRow, 'value', Gio.SettingsBindFlags.DEFAULT);
         this._settings.bind('animation-delay', animationDelayRow, 'value', Gio.SettingsBindFlags.DEFAULT);
@@ -102,7 +129,6 @@ export default class HomeButtonPreferences extends ExtensionPreferences {
         this._settings.bind('exclude-always-on-top', excludeOnTopRow, 'active', Gio.SettingsBindFlags.DEFAULT);
         this._settings.bind('show-count-in-tooltip', showCountRow, 'active', Gio.SettingsBindFlags.DEFAULT);
 
-        // Special handling for ComboRow
         const currentPosition = this._settings.get_string('button-position');
         const positions = ['left', 'center', 'right'];
         positionRow.selected = positions.indexOf(currentPosition);
@@ -111,29 +137,42 @@ export default class HomeButtonPreferences extends ExtensionPreferences {
         });
     }
 
-    _selectIcon(parentWindow) {
+    _selectIcon() {
         const dialog = new Gtk.FileChooserDialog({
             title: 'Select an Icon',
-            transient_for: parentWindow,
+            transient_for: this._window,
             modal: true,
             action: Gtk.FileChooserAction.OPEN,
         });
-
         const filter = new Gtk.FileFilter();
         filter.add_pixbuf_formats();
         dialog.set_filter(filter);
-
         dialog.add_button('Cancel', Gtk.ResponseType.CANCEL);
         dialog.add_button('Select', Gtk.ResponseType.ACCEPT);
-
         dialog.connect('response', (dlg, response) => {
             if (response === Gtk.ResponseType.ACCEPT) {
-                const file = dialog.get_file();
-                this._settings.set_string('icon-path', file.get_path());
+                this._settings.set_string('icon-path', dialog.get_file().get_path());
             }
             dialog.destroy();
         });
-
         dialog.show();
+    }
+
+    _showResetDialog() {
+        const dialog = new Adw.MessageDialog({
+            heading: 'Reset Settings?',
+            body: 'All settings will be restored to their default values.',
+            transient_for: this._window,
+            modal: true,
+        });
+        dialog.add_response('cancel', 'Cancel');
+        dialog.add_response('reset', 'Reset');
+        dialog.set_response_appearance('reset', Adw.ResponseAppearance.DESTRUCTIVE);
+        dialog.connect('response', (dlg, response) => {
+            if (response === 'reset') {
+                this._settings.list_keys().forEach(key => this._settings.reset(key));
+            }
+        });
+        dialog.present();
     }
 }
