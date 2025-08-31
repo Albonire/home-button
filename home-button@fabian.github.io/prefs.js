@@ -13,7 +13,6 @@ export default class HomeButtonPreferences extends ExtensionPreferences {
         const page = new Adw.PreferencesPage();
         window.add(page);
 
-        // Appearance Group
         const appearanceGroup = new Adw.PreferencesGroup({
             title: 'Appearance',
             description: 'Customize the look and position of the home button.',

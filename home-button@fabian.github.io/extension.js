@@ -153,7 +153,7 @@ export default class HomeButtonExtension extends Extension {
 
             const excludeOnTop = this._settings.get_boolean('exclude-always-on-top');
             this._minimizedWindows = windowsToFilter.filter(w =>
-                w && !w.minimized && !w.is_skip_taskbar() &&
+                w && w.can_minimize() && !w.minimized && !w.is_skip_taskbar() &&
                 w.get_window_type() === Meta.WindowType.NORMAL &&
                 !(excludeOnTop && w.is_above())
             );
