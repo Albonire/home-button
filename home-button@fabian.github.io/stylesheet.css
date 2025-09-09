@@ -1,74 +1,102 @@
+/* Home Button Extension Styles - GNOME Shell Standard Compliance */
+
 #home-button-indicator {
-    padding: 8.1px 6px 8.1px 0;
-    min-width: 40px;
-    min-height: 40px;
+    /* Standard GNOME Shell panel button padding */
+    -natural-hpadding: 12px;
+    -minimum-hpadding: 6px;
+    
+    /* Standard panel button properties */
     background: transparent;
     border: none;
     box-shadow: none;
-    transition: none;
-    font-weight: 900;
+    border-radius: 0px;
+    
+    /* Smooth transitions matching GNOME Shell */
+    transition: all 0.15s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-#home-button-indicator:hover,
+/* Standard GNOME Shell hover states */
+#home-button-indicator:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    transition: all 0.15s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
 #home-button-indicator:active {
-    background: transparent;
-    box-shadow: none;
-    transform: none;
+    background-color: rgba(255, 255, 255, 0.2);
+    transition: all 0.05s ease-out;
 }
 
+/* Icon styling to match GNOME Shell system status icons */
 #home-button-indicator .home-button-icon {
     margin: 0;
-    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
+    padding: 0;
+    color: inherit;
+    
+    /* Icon transition for smooth switching */
+    transition: opacity 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-#home-button-indicator .home-button-icon.icon-size-16 { font-size: 16px; }
-#home-button-indicator .home-button-icon.icon-size-18 { font-size: 18px; }
-#home-button-indicator .home-button-icon.icon-size-20 { font-size: 20px; }
-#home-button-indicator .home-button-icon.icon-size-22 { font-size: 22px; }
-#home-button-indicator .home-button-icon.icon-size-24 { font-size: 24px; }
-#home-button-indicator .home-button-icon.icon-size-26 { font-size: 26px; }
-#home-button-indicator .home-button-icon.icon-size-28 { font-size: 28px; }
-#home-button-indicator .home-button-icon.icon-size-30 { font-size: 30px; }
-#home-button-indicator .home-button-icon.icon-size-32 { font-size: 32px; }
+/* Animation states for icon switching */
+#home-button-indicator .home-button-icon.fade-out {
+    opacity: 0;
+}
 
+#home-button-indicator .home-button-icon.fade-in {
+    opacity: 1;
+}
+
+/* Ensure proper sizing and alignment like system-status-icon */
+#home-button-indicator .system-status-icon {
+    icon-size: 1em;
+}
+
+/* State-specific styling for minimized mode */
 #home-button-indicator.minimized-mode {
     background: transparent;
-    border: none;
-    box-shadow: none;
 }
 
 #home-button-indicator.minimized-mode:hover {
-    background: transparent;
-    border: none;
-    box-shadow: none;
+    background-color: rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
 }
 
-#home-button-indicator.minimized-mode::after {
-    content: none;
-}
-
-@keyframes pulse-indicator {
-    /* No animation */
-}
-
+/* Focus handling matching GNOME Shell standards */
 #home-button-indicator:focus {
-    outline: none;
+    outline: 2px solid rgba(138, 173, 244, 0.7);
+    outline-offset: 2px;
+    border-radius: 6px;
 }
 
-/* responsive design for different DPI */
-@media (-webkit-device-pixel-ratio: 2) {
-    #home-button-indicator .home-button-icon.icon-size-16 { font-size: 18px; }
-    #home-button-indicator .home-button-icon.icon-size-18 { font-size: 20px; }
-    #home-button-indicator .home-button-icon.icon-size-20 { font-size: 22px; }
-    #home-button-indicator .home-button-icon.icon-size-22 { font-size: 24px; }
-    #home-button-indicator .home-button-icon.icon-size-24 { font-size: 26px; }
-    #home-button-indicator .home-button-icon.icon-size-26 { font-size: 28px; }
-    #home-button-indicator .home-button-icon.icon-size-28 { font-size: 30px; }
-    #home-button-indicator .home-button-icon.icon-size-30 { font-size: 32px; }
-    #home-button-indicator .home-button-icon.icon-size-32 { font-size: 34px; }
-    
+/* Theme-specific adjustments */
+.shell-dark-theme #home-button-indicator:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.shell-dark-theme #home-button-indicator:active {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.shell-light-theme #home-button-indicator:hover {
+    background-color: rgba(0, 0, 0, 0.08);
+}
+
+.shell-light-theme #home-button-indicator:active {
+    background-color: rgba(0, 0, 0, 0.12);
+}
+
+/* High DPI adjustments */
+ @media (min-resolution: 2dppx) {
     #home-button-indicator {
-        min-width: 44px;
-        min-height: 44px;
+        -natural-hpadding: 14px;
+        -minimum-hpadding: 8px;
+    }
+}
+
+/* Compact mode adjustments for smaller screens */
+ @media (max-width: 1366px) {
+    #home-button-indicator {
+        -natural-hpadding: 10px;
+        -minimum-hpadding: 5px;
     }
 }
