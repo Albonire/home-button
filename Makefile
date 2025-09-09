@@ -11,7 +11,7 @@ ZIP_FILE = $(UUID).zip
 
 .DEFAULT_GOAL := help
 
-.PHONY: help install uninstall enable disable log zip clean compile-schema prefs
+.PHONY: help install uninstall enable disable log zip clean compile-schema prefs create-icon-dir
 
 help:
 	@echo "Home Button extension Manager"
@@ -23,14 +23,21 @@ help:
 	@echo "  make disable        - Desactivate extension."
 	@echo "  make prefs          - Open extension preferences."
 	@echo "  make compile-schema - Compile configuration schema."
+	@echo "  make create-icon-dir- Create icons directory for custom icons."
 	@echo "  make log            - Show GNOME shell extensions logs in real time."
-	@echo "  make zip            - Create a zip file to uplead to extensions.gnome.org."
+	@echo "  make zip            - Create a zip file to upload to extensions.gnome.org."
 	@echo "  make clean          - Delete generated files (like the .zip)."
 	@echo ""
 	@echo "IMPORTANT: To apply changes, manually reload GNOME Shell:"
 	@echo "  1. Press Alt + F2"
 	@echo "  2. Type 'r' in the text field."
 	@echo "  3. Press enter"
+
+create-icon-dir:
+	@echo "Creating icons directory..."
+	@mkdir -p $(SRC_DIR)/icons
+	@echo "Icons directory created at $(SRC_DIR)/icons"
+	@echo "Place your home-symbolic.svg file there for the default icon."
 
 compile-schema:
 	@echo "Compiling schema configuration..."
@@ -43,7 +50,7 @@ install: uninstall compile-schema
 	@echo "Installing extension in: $(INSTALL_DIR)"
 	@cp -r $(SRC_DIR) $(INSTALL_DIR)
 	@echo "¡Installation complete!"
-	@echo "To apply the changes, reload GNOME Shell (Alt+F2, 'r', Enter - on x11, or manual reload otherwise) and activate the extension with 'make enable'.."
+	@echo "To apply the changes, reload GNOME Shell (Alt+F2, 'r', Enter - on x11, or manual reload otherwise) and activate the extension with 'make enable'."
 
 uninstall:
 	@echo "Removing previous installation if it exists..."
@@ -72,6 +79,13 @@ zip: clean compile-schema
 	@cp schemas/$(SCHEMA_FILE) temp-schemas/
 	@cd temp-schemas && zip -r ../$(ZIP_FILE) $(SCHEMA_FILE)
 	@rm -rf temp-schemas
+	@echo "Bundling icons directory if it exists..."
+	@if [ -d "$(SRC_DIR)/icons" ]; then \
+	echo "Icons directory found, adding to zip..."; \
+	cd $(SRC_DIR) && zip -r ../$(ZIP_FILE) icons/; \
+	else \
+	echo "No icons directory found, skipping..."; \
+	fi
 	@echo "Zip created in $(ZIP_FILE)"
 
 clean:
