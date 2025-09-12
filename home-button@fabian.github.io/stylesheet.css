@@ -1,17 +1,11 @@
-/* Home Button Extension Styles - GNOME Shell Standard Compliance */
 
 #home-button-indicator {
-    /* Standard GNOME Shell panel button padding */
     -natural-hpadding: 12px;
     -minimum-hpadding: 6px;
-    
-    /* Standard panel button properties */
     background: transparent;
     border: none;
     box-shadow: none;
     border-radius: 0px;
-    
-    /* Smooth transitions matching GNOME Shell */
     transition: all 0.15s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
@@ -29,7 +23,7 @@
 
 /* Icon styling to match GNOME Shell system status icons */
 #home-button-indicator .home-button-icon {
-    margin: 0;
+    margin: 0 12px;
     padding: 0;
     color: inherit;
     
