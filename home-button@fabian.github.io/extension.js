@@ -18,6 +18,11 @@ export default class HomeButtonExtension extends Extension {
         this._animationTimeoutId = null;
         this._isAnimatingIcon = false;
         this._currentIconState = 'home'; // 'home' or 'restore'
+        
+        // NEW: Enhanced focus restoration system
+        this._lastFocusedWindow = null;
+        this._windowStates = new Map(); // Stores window states before minimization
+        this._restoreTimeoutId = null;
     }
 
     enable() {
@@ -58,6 +63,11 @@ export default class HomeButtonExtension extends Extension {
             this._animationTimeoutId = null;
         }
 
+        if (this._restoreTimeoutId) {
+            GLib.Source.remove(this._restoreTimeoutId);
+            this._restoreTimeoutId = null;
+        }
+
         // Clear any ongoing icon animations
         if (this._isAnimatingIcon) {
             this._icon.remove_all_transitions();
@@ -72,6 +82,8 @@ export default class HomeButtonExtension extends Extension {
         this._icon = null;
         this._minimizedWindows = [];
         this._settings = null;
+        this._lastFocusedWindow = null;
+        this._windowStates.clear();
     }
 
     _connectSettings() {
@@ -192,19 +204,135 @@ export default class HomeButtonExtension extends Extension {
         }
     }
 
+    // NEW: Enhanced window state capture before minimization
+    _captureWindowStates(windows) {
+        this._windowStates.clear();
+        this._lastFocusedWindow = null;
+
+        // Get currently focused window
+        const focusedWindow = global.display.get_focus_window();
+        
+        // Store detailed state for each window
+        windows.forEach((window, index) => {
+            if (!window || !window.get_compositor_private()) return;
+            
+            const windowState = {
+                window: window,
+                originalIndex: index,
+                userTime: window.get_user_time(),
+                wasActive: window === focusedWindow,
+                workspace: window.get_workspace(),
+                wmClass: window.get_wm_class(),
+                title: window.get_title()
+            };
+            
+            this._windowStates.set(window, windowState);
+            
+            // Mark the focused window
+            if (window === focusedWindow) {
+                this._lastFocusedWindow = window;
+            }
+        });
+
+        // If no focused window was found in our list, find the most recently active
+        if (!this._lastFocusedWindow && this._windowStates.size > 0) {
+            let mostRecentWindow = null;
+            let highestUserTime = 0;
+            
+            this._windowStates.forEach((state, window) => {
+                if (state.userTime > highestUserTime) {
+                    highestUserTime = state.userTime;
+                    mostRecentWindow = window;
+                }
+            });
+            
+            this._lastFocusedWindow = mostRecentWindow;
+        }
+    }
+
+    // NEW: Smart window activation with multiple fallback strategies
+    _activateWindowSmart(window) {
+        if (!window || !window.get_compositor_private()) {
+            return false;
+        }
+
+        try {
+            const currentTime = global.get_current_time();
+            const windowState = this._windowStates.get(window);
+            
+            // Strategy 1: Switch workspace if necessary
+            if (windowState && windowState.workspace) {
+                const currentWorkspace = global.workspace_manager.get_active_workspace();
+                if (windowState.workspace !== currentWorkspace) {
+                    windowState.workspace.activate(currentTime);
+                    
+                    // Wait for workspace switch to complete
+                    GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
+                        this._doWindowActivation(window, currentTime);
+                        return GLib.SOURCE_REMOVE;
+                    });
+                    return true;
+                }
+            }
+            
+            // Strategy 2: Direct activation
+            return this._doWindowActivation(window, currentTime);
+            
+        } catch (e) {
+            console.warn(`Home Button Extension: Failed to activate window: ${e.message}`);
+            return false;
+        }
+    }
+
+    // NEW: Core window activation logic
+    _doWindowActivation(window, currentTime) {
+        if (!window || !window.get_compositor_private()) {
+            return false;
+        }
+
+        try {
+            // Method 1: Use raise + activate + focus sequence
+            window.raise();
+            window.activate(currentTime);
+            window.focus(currentTime);
+            
+            // Method 2: Also try Main.activateWindow for additional assurance
+            if (Main.activateWindow) {
+                Main.activateWindow(window);
+            }
+            
+            return true;
+        } catch (e) {
+            console.warn(`Home Button Extension: Core activation failed: ${e.message}`);
+            return false;
+        }
+    }
+
+    // ENHANCED: Better window processing with staged restoration
     _processWindowList(windows, action) {
         const delay = this._settings.get_int('animation-delay');
+        
+        if (action === 'minimize') {
+            // Capture state before minimizing
+            this._captureWindowStates(windows);
+        }
+        
         if (delay === 0) {
+            // Immediate processing
             windows.forEach(win => {
                 if (win?.get_compositor_private()) {
                     action === 'minimize' ? win.minimize() : win.unminimize();
                 }
             });
-            if (action === 'unminimize') this._minimizedWindows = [];
+            
+            if (action === 'unminimize') {
+                this._scheduleWindowRestoration();
+            }
             this._updateState();
             return;
         }
 
+        // Animated processing
         let i = 0;
         this._animationTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, delay, () => {
             if (i < windows.length) {
@@ -216,11 +344,93 @@ export default class HomeButtonExtension extends Extension {
                 return GLib.SOURCE_CONTINUE;
             }
             
-            if (action === 'unminimize') this._minimizedWindows = [];
+            if (action === 'unminimize') {
+                this._scheduleWindowRestoration();
+            }
+            
             this._animationTimeoutId = null;
             this._updateState();
             return GLib.SOURCE_REMOVE;
         });
+    }
+
+    // NEW: Schedule window restoration with proper timing
+    _scheduleWindowRestoration() {
+        // Clear any existing restoration timeout
+        if (this._restoreTimeoutId) {
+            GLib.Source.remove(this._restoreTimeoutId);
+            this._restoreTimeoutId = null;
+        }
+
+        // Schedule restoration after a delay to ensure all windows are unminimized
+        this._restoreTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => {
+            this._performWindowRestoration();
+            this._restoreTimeoutId = null;
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    // NEW: Perform the actual window restoration with multiple attempts
+    _performWindowRestoration() {
+        let windowToFocus = null;
+
+        // Strategy 1: Try to restore the last focused window
+        if (this._lastFocusedWindow && 
+            this._minimizedWindows.includes(this._lastFocusedWindow) &&
+            this._lastFocusedWindow.get_compositor_private()) {
+            windowToFocus = this._lastFocusedWindow;
+        }
+
+        // Strategy 2: Find window that was previously active
+        if (!windowToFocus) {
+            this._windowStates.forEach((state, window) => {
+                if (state.wasActive && 
+                    this._minimizedWindows.includes(window) &&
+                    window.get_compositor_private()) {
+                    windowToFocus = window;
+                }
+            });
+        }
+
+        // Strategy 3: Find most recently used window
+        if (!windowToFocus) {
+            let highestUserTime = 0;
+            this._windowStates.forEach((state, window) => {
+                if (this._minimizedWindows.includes(window) &&
+                    window.get_compositor_private() &&
+                    state.userTime > highestUserTime) {
+                    highestUserTime = state.userTime;
+                    windowToFocus = window;
+                }
+            });
+        }
+
+        // Strategy 4: Fallback to first available window
+        if (!windowToFocus && this._minimizedWindows.length > 0) {
+            for (const window of this._minimizedWindows) {
+                if (window && window.get_compositor_private()) {
+                    windowToFocus = window;
+                    break;
+                }
+            }
+        }
+
+        // Activate the selected window
+        if (windowToFocus) {
+            // Try multiple activation attempts with different delays
+            this._activateWindowSmart(windowToFocus);
+            
+            // Backup activation attempt
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 300, () => {
+                if (global.display.get_focus_window() !== windowToFocus) {
+                    this._doWindowActivation(windowToFocus, global.get_current_time());
+                }
+                return GLib.SOURCE_REMOVE;
+            });
+        }
+
+        // Clear minimized windows list
+        this._minimizedWindows = [];
     }
 
     _addButtonPulseEffect() {
@@ -248,8 +458,10 @@ export default class HomeButtonExtension extends Extension {
         this._addButtonPulseEffect();
 
         if (this._minimizedWindows.length > 0) {
+            // Restoring windows
             this._processWindowList([...this._minimizedWindows], 'unminimize');
         } else {
+            // Minimizing windows
             const allWorkspaces = this._settings.get_boolean('include-all-workspaces');
             let windowsToFilter;
 
