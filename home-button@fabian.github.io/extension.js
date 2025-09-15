@@ -19,10 +19,14 @@ export default class HomeButtonExtension extends Extension {
         this._isAnimatingIcon = false;
         this._currentIconState = 'home'; // 'home' or 'restore'
         
-        // NEW: Enhanced focus restoration system
+        // Enhanced focus restoration system
         this._lastFocusedWindow = null;
         this._windowStates = new Map(); // Stores window states before minimization
         this._restoreTimeoutId = null;
+
+        // For robust animation
+        this._updateStateTimeoutId = null;
+        this._currentAnimationTarget = null;
     }
 
     enable() {
@@ -41,6 +45,10 @@ export default class HomeButtonExtension extends Extension {
         });
         this._indicator.set_child(this._icon);
 
+        // Add these lines after creating the icon:
+        this._currentIconState = 'home';  // Initialize icon state  
+        this._isAnimatingIcon = false;
+
         this._indicator.connect('button-press-event', (actor, event) => {
             if (event.get_button() === Clutter.BUTTON_PRIMARY) {
                 this._toggleWindows();
@@ -58,6 +66,15 @@ export default class HomeButtonExtension extends Extension {
     }
 
     disable() {
+        // Limpiar timeout de updateState
+        if (this._updateStateTimeoutId) {
+            GLib.Source.remove(this._updateStateTimeoutId);
+            this._updateStateTimeoutId = null;
+        }
+        
+        // Limpiar animaciones con mejor manejo
+        this._cleanupAnimation();
+
         if (this._animationTimeoutId) {
             GLib.Source.remove(this._animationTimeoutId);
             this._animationTimeoutId = null;
@@ -66,12 +83,6 @@ export default class HomeButtonExtension extends Extension {
         if (this._restoreTimeoutId) {
             GLib.Source.remove(this._restoreTimeoutId);
             this._restoreTimeoutId = null;
-        }
-
-        // Clear any ongoing icon animations
-        if (this._isAnimatingIcon) {
-            this._icon.remove_all_transitions();
-            this._isAnimatingIcon = false;
         }
 
         this._settingsConnections.forEach(id => this._settings.disconnect(id));
@@ -84,6 +95,8 @@ export default class HomeButtonExtension extends Extension {
         this._settings = null;
         this._lastFocusedWindow = null;
         this._windowStates.clear();
+        this._currentAnimationTarget = null;
+        this._currentIconState = 'home'; // Reset icon state
     }
 
     _connectSettings() {
@@ -140,43 +153,118 @@ export default class HomeButtonExtension extends Extension {
     }
 
     _animateIconTransition(newIconCallback, targetState) {
-        if (this._isAnimatingIcon || this._currentIconState === targetState) {
+        // Validar estado actual y evitar animaciones redundantes
+        if (this._currentIconState === targetState) {
             return;
         }
-
-        this._isAnimatingIcon = true;
-        const ANIMATION_DURATION = 200; // milliseconds
         
-        // Phase 1: Fade out current icon
+        // Limpiar cualquier animación existente antes de iniciar una nueva
+        this._cleanupAnimation();
+        
+        // Verificar que el ícono sigue siendo válido
+        if (!this._icon || this._icon.is_finalized()) {
+            console.warn('Home Button Extension: Cannot animate - icon is not valid. Applying fallback.');
+            try {
+                newIconCallback();
+                this._currentIconState = targetState;
+            } catch (e) {
+                console.error(`Home Button Extension: Fallback icon change failed: ${e.message}`);
+            }
+            return;
+        }
+    
+        this._isAnimatingIcon = true;
+        const ANIMATION_DURATION = 150; // milliseconds
+        
+        // Almacenar referencia para cleanup
+        this._currentAnimationTarget = this._icon;
+        
+        // Phase 1: Fade out current icon con validaciones robustas
         this._icon.ease({
             opacity: 0,
             duration: ANIMATION_DURATION / 2,
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
             onComplete: () => {
-                // Phase 2: Change icon and fade in
-                newIconCallback();
-                this._currentIconState = targetState;
+                // Validar que el contexto sigue siendo válido
+                if (!this._icon || this._icon.is_finalized() || !this._isAnimatingIcon) {
+                    this._resetAnimationState();
+                    return;
+                }
                 
-                this._icon.ease({
-                    opacity: 255,
-                    duration: ANIMATION_DURATION / 2,
-                    mode: Clutter.AnimationMode.EASE_IN_CUBIC,
-                    onComplete: () => {
-                        this._isAnimatingIcon = false;
-                    }
-                });
+                try {
+                    // Phase 2: Change icon and fade in
+                    newIconCallback();
+                    this._currentIconState = targetState;
+                    
+                    this._icon.ease({
+                        opacity: 255,
+                        duration: ANIMATION_DURATION / 2,
+                        mode: Clutter.AnimationMode.EASE_IN_CUBIC,
+                        onComplete: () => {
+                            this._resetAnimationState();
+                        },
+                        onStopped: () => {
+                            // Callback cuando la animación se detiene prematuramente
+                            this._resetAnimationState();
+                        }
+                    });
+                } catch (error) {
+                    console.warn(`Home Button Extension: Animation error in phase 2: ${error.message}`);
+                    this._resetAnimationState();
+                }
+            },
+            onStopped: () => {
+                // Callback cuando la primera fase se detiene prematuramente
+                this._resetAnimationState();
             }
         });
     }
 
+    _cleanupAnimation() {
+        if (this._isAnimatingIcon && this._icon && !this._icon.is_finalized()) {
+            // Detener todas las transiciones existentes
+            this._icon.remove_all_transitions();
+            
+            // Restaurar opacidad inmediatamente
+            this._icon.set_opacity(255);
+        }
+        
+        this._resetAnimationState();
+    }
+
+    _resetAnimationState() {
+        this._isAnimatingIcon = false;
+        this._currentAnimationTarget = null;
+    }
+
     _updateState() {
+        if (this._updateStateTimeoutId) {
+            GLib.Source.remove(this._updateStateTimeoutId);
+            this._updateStateTimeoutId = null;
+        }
+
+        // Only debounce if an animation is currently running
+        if (this._isAnimatingIcon) {
+            this._updateStateTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
+                this._doUpdateState();
+                this._updateStateTimeoutId = null;
+                return GLib.SOURCE_REMOVE;
+            });
+        } else {
+            this._doUpdateState();
+        }
+    }
+
+    _doUpdateState() {
         const hasMinimized = this._minimizedWindows.length > 0;
         const showCount = this._settings.get_boolean('show-count-in-tooltip');
-
+    
         if (hasMinimized && this._currentIconState !== 'restore') {
             // Animate to restore icon
             this._animateIconTransition(() => {
-                this._icon.set_gicon(Gio.icon_new_for_string('view-restore-symbolic'));
+                if (this._icon && !this._icon.is_finalized()) {
+                    this._icon.set_gicon(Gio.icon_new_for_string('view-restore-symbolic'));
+                }
             }, 'restore');
             
             this._indicator.tooltip_text = showCount
@@ -187,13 +275,15 @@ export default class HomeButtonExtension extends Extension {
         } else if (!hasMinimized && this._currentIconState !== 'home') {
             // Animate to home icon
             this._animateIconTransition(() => {
-                this._updateIconPath();
+                if (this._icon && !this._icon.is_finalized()) {
+                    this._updateIconPath();
+                }
             }, 'home');
             
             this._indicator.tooltip_text = 'Minimize all windows and show desktop';
             this._indicator.remove_style_class_name('minimized-mode');
         }
-
+    
         // Update tooltip even if no animation is needed
         if (hasMinimized) {
             this._indicator.tooltip_text = showCount
@@ -204,15 +294,12 @@ export default class HomeButtonExtension extends Extension {
         }
     }
 
-    // NEW: Enhanced window state capture before minimization
     _captureWindowStates(windows) {
         this._windowStates.clear();
         this._lastFocusedWindow = null;
 
-        // Get currently focused window
         const focusedWindow = global.display.get_focus_window();
         
-        // Store detailed state for each window
         windows.forEach((window, index) => {
             if (!window || !window.get_compositor_private()) return;
             
@@ -228,13 +315,11 @@ export default class HomeButtonExtension extends Extension {
             
             this._windowStates.set(window, windowState);
             
-            // Mark the focused window
             if (window === focusedWindow) {
                 this._lastFocusedWindow = window;
             }
         });
 
-        // If no focused window was found in our list, find the most recently active
         if (!this._lastFocusedWindow && this._windowStates.size > 0) {
             let mostRecentWindow = null;
             let highestUserTime = 0;
@@ -250,7 +335,6 @@ export default class HomeButtonExtension extends Extension {
         }
     }
 
-    // NEW: Smart window activation with multiple fallback strategies
     _activateWindowSmart(window) {
         if (!window || !window.get_compositor_private()) {
             return false;
@@ -260,13 +344,11 @@ export default class HomeButtonExtension extends Extension {
             const currentTime = global.get_current_time();
             const windowState = this._windowStates.get(window);
             
-            // Strategy 1: Switch workspace if necessary
             if (windowState && windowState.workspace) {
                 const currentWorkspace = global.workspace_manager.get_active_workspace();
                 if (windowState.workspace !== currentWorkspace) {
                     windowState.workspace.activate(currentTime);
                     
-                    // Wait for workspace switch to complete
                     GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
                         this._doWindowActivation(window, currentTime);
                         return GLib.SOURCE_REMOVE;
@@ -275,7 +357,6 @@ export default class HomeButtonExtension extends Extension {
                 }
             }
             
-            // Strategy 2: Direct activation
             return this._doWindowActivation(window, currentTime);
             
         } catch (e) {
@@ -284,19 +365,16 @@ export default class HomeButtonExtension extends Extension {
         }
     }
 
-    // NEW: Core window activation logic
     _doWindowActivation(window, currentTime) {
         if (!window || !window.get_compositor_private()) {
             return false;
         }
 
         try {
-            // Method 1: Use raise + activate + focus sequence
             window.raise();
             window.activate(currentTime);
             window.focus(currentTime);
             
-            // Method 2: Also try Main.activateWindow for additional assurance
             if (Main.activateWindow) {
                 Main.activateWindow(window);
             }
@@ -308,17 +386,14 @@ export default class HomeButtonExtension extends Extension {
         }
     }
 
-    // ENHANCED: Better window processing with staged restoration
     _processWindowList(windows, action) {
         const delay = this._settings.get_int('animation-delay');
         
         if (action === 'minimize') {
-            // Capture state before minimizing
             this._captureWindowStates(windows);
         }
         
         if (delay === 0) {
-            // Immediate processing
             windows.forEach(win => {
                 if (win?.get_compositor_private()) {
                     action === 'minimize' ? win.minimize() : win.unminimize();
@@ -332,7 +407,6 @@ export default class HomeButtonExtension extends Extension {
             return;
         }
 
-        // Animated processing
         let i = 0;
         this._animationTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, delay, () => {
             if (i < windows.length) {
@@ -354,15 +428,12 @@ export default class HomeButtonExtension extends Extension {
         });
     }
 
-    // NEW: Schedule window restoration with proper timing
     _scheduleWindowRestoration() {
-        // Clear any existing restoration timeout
         if (this._restoreTimeoutId) {
             GLib.Source.remove(this._restoreTimeoutId);
             this._restoreTimeoutId = null;
         }
 
-        // Schedule restoration after a delay to ensure all windows are unminimized
         this._restoreTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => {
             this._performWindowRestoration();
             this._restoreTimeoutId = null;
@@ -370,18 +441,15 @@ export default class HomeButtonExtension extends Extension {
         });
     }
 
-    // NEW: Perform the actual window restoration with multiple attempts
     _performWindowRestoration() {
         let windowToFocus = null;
 
-        // Strategy 1: Try to restore the last focused window
         if (this._lastFocusedWindow && 
             this._minimizedWindows.includes(this._lastFocusedWindow) &&
             this._lastFocusedWindow.get_compositor_private()) {
             windowToFocus = this._lastFocusedWindow;
         }
 
-        // Strategy 2: Find window that was previously active
         if (!windowToFocus) {
             this._windowStates.forEach((state, window) => {
                 if (state.wasActive && 
@@ -392,7 +460,6 @@ export default class HomeButtonExtension extends Extension {
             });
         }
 
-        // Strategy 3: Find most recently used window
         if (!windowToFocus) {
             let highestUserTime = 0;
             this._windowStates.forEach((state, window) => {
@@ -405,7 +472,6 @@ export default class HomeButtonExtension extends Extension {
             });
         }
 
-        // Strategy 4: Fallback to first available window
         if (!windowToFocus && this._minimizedWindows.length > 0) {
             for (const window of this._minimizedWindows) {
                 if (window && window.get_compositor_private()) {
@@ -415,12 +481,9 @@ export default class HomeButtonExtension extends Extension {
             }
         }
 
-        // Activate the selected window
         if (windowToFocus) {
-            // Try multiple activation attempts with different delays
             this._activateWindowSmart(windowToFocus);
             
-            // Backup activation attempt
             GLib.timeout_add(GLib.PRIORITY_DEFAULT, 300, () => {
                 if (global.display.get_focus_window() !== windowToFocus) {
                     this._doWindowActivation(windowToFocus, global.get_current_time());
@@ -429,12 +492,10 @@ export default class HomeButtonExtension extends Extension {
             });
         }
 
-        // Clear minimized windows list
         this._minimizedWindows = [];
     }
 
     _addButtonPulseEffect() {
-        // Add a subtle pulse effect when clicked
         this._indicator.ease({
             scale_x: 0.95,
             scale_y: 0.95,
@@ -454,14 +515,11 @@ export default class HomeButtonExtension extends Extension {
     _toggleWindows() {
         if (this._animationTimeoutId) return;
 
-        // Add button press effect
         this._addButtonPulseEffect();
 
         if (this._minimizedWindows.length > 0) {
-            // Restoring windows
             this._processWindowList([...this._minimizedWindows], 'unminimize');
         } else {
-            // Minimizing windows
             const allWorkspaces = this._settings.get_boolean('include-all-workspaces');
             let windowsToFilter;
 
