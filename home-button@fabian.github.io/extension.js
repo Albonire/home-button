@@ -19,12 +19,10 @@ export default class HomeButtonExtension extends Extension {
         this._isAnimatingIcon = false;
         this._currentIconState = 'home'; // 'home' or 'restore'
         
-        // Enhanced focus restoration system
         this._lastFocusedWindow = null;
-        this._windowStates = new Map(); // Stores window states before minimization
+        this._windowStates = new Map(); 
         this._restoreTimeoutId = null;
 
-        // For robust animation
         this._updateStateTimeoutId = null;
         this._currentAnimationTarget = null;
     }
@@ -45,8 +43,7 @@ export default class HomeButtonExtension extends Extension {
         });
         this._indicator.set_child(this._icon);
 
-        // Add these lines after creating the icon:
-        this._currentIconState = 'home';  // Initialize icon state  
+        this._currentIconState = 'home';  
         this._isAnimatingIcon = false;
 
         this._indicator.connect('button-press-event', (actor, event) => {
@@ -72,7 +69,6 @@ export default class HomeButtonExtension extends Extension {
             this._updateStateTimeoutId = null;
         }
         
-        // Limpiar animaciones con mejor manejo
         this._cleanupAnimation();
 
         if (this._animationTimeoutId) {
@@ -153,12 +149,10 @@ export default class HomeButtonExtension extends Extension {
     }
 
     _animateIconTransition(newIconCallback, targetState) {
-        // Validar estado actual y evitar animaciones redundantes
         if (this._currentIconState === targetState) {
             return;
         }
         
-        // Limpiar cualquier animación existente antes de iniciar una nueva
         this._cleanupAnimation();
         
         // Verificar que el ícono sigue siendo válido
@@ -174,25 +168,21 @@ export default class HomeButtonExtension extends Extension {
         }
     
         this._isAnimatingIcon = true;
-        const ANIMATION_DURATION = 150; // milliseconds
+        const ANIMATION_DURATION = 150;
         
-        // Almacenar referencia para cleanup
         this._currentAnimationTarget = this._icon;
         
-        // Phase 1: Fade out current icon con validaciones robustas
         this._icon.ease({
             opacity: 0,
             duration: ANIMATION_DURATION / 2,
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
             onComplete: () => {
-                // Validar que el contexto sigue siendo válido
                 if (!this._icon || this._icon.is_finalized() || !this._isAnimatingIcon) {
                     this._resetAnimationState();
                     return;
                 }
                 
                 try {
-                    // Phase 2: Change icon and fade in
                     newIconCallback();
                     this._currentIconState = targetState;
                     
@@ -214,7 +204,6 @@ export default class HomeButtonExtension extends Extension {
                 }
             },
             onStopped: () => {
-                // Callback cuando la primera fase se detiene prematuramente
                 this._resetAnimationState();
             }
         });
@@ -222,10 +211,7 @@ export default class HomeButtonExtension extends Extension {
 
     _cleanupAnimation() {
         if (this._isAnimatingIcon && this._icon && !this._icon.is_finalized()) {
-            // Detener todas las transiciones existentes
             this._icon.remove_all_transitions();
-            
-            // Restaurar opacidad inmediatamente
             this._icon.set_opacity(255);
         }
         
@@ -273,7 +259,6 @@ export default class HomeButtonExtension extends Extension {
             this._indicator.add_style_class_name('minimized-mode');
             
         } else if (!hasMinimized && this._currentIconState !== 'home') {
-            // Animate to home icon
             this._animateIconTransition(() => {
                 if (this._icon && !this._icon.is_finalized()) {
                     this._updateIconPath();
