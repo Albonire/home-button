@@ -121,7 +121,6 @@ export default class HomeButtonPreferences extends ExtensionPreferences {
         });
         aboutRow.add_suffix(linkButton);
 
-        // Bind settings
         this._settings.bind('icon-size', iconSizeRow, 'value', Gio.SettingsBindFlags.DEFAULT);
         this._settings.bind('animation-delay', animationDelayRow, 'value', Gio.SettingsBindFlags.DEFAULT);
         this._settings.bind('include-all-workspaces', allWorkspacesRow, 'active', Gio.SettingsBindFlags.DEFAULT);
