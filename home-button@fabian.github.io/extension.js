@@ -18,18 +18,15 @@ export default class HomeButtonExtension extends Extension {
         this._animationTimeoutId = null;
         this._isAnimatingIcon = false;
         this._currentIconState = 'home'; // 'home' or 'restore'
-        
         this._lastFocusedWindow = null;
         this._windowStates = new Map(); 
         this._restoreTimeoutId = null;
-
         this._updateStateTimeoutId = null;
         this._currentAnimationTarget = null;
     }
 
     enable() {
         this._settings = this.getSettings();
-
         this._indicator = new St.Bin({
             reactive: true,
             can_focus: true,
@@ -55,7 +52,6 @@ export default class HomeButtonExtension extends Extension {
 
         this._settingsConnections = new Map();
         this._connectSettings();
-
         this._addToPanel();
         this._updateIconSize();
         this._updateIconPath();
@@ -63,7 +59,6 @@ export default class HomeButtonExtension extends Extension {
     }
 
     disable() {
-        // Limpiar timeout de updateState
         if (this._updateStateTimeoutId) {
             GLib.Source.remove(this._updateStateTimeoutId);
             this._updateStateTimeoutId = null;
@@ -83,7 +78,6 @@ export default class HomeButtonExtension extends Extension {
 
         this._settingsConnections.forEach(id => this._settings.disconnect(id));
         this._settingsConnections.clear();
-
         this._indicator?.destroy();
         this._indicator = null;
         this._icon = null;
@@ -117,7 +111,6 @@ export default class HomeButtonExtension extends Extension {
     _getDefaultIconPath() {
         const extensionPath = this.path;
         const defaultIconPath = GLib.build_filenamev([extensionPath, 'icons', 'home-symbolic.svg']);
-        
         if (GLib.file_test(defaultIconPath, GLib.FileTest.EXISTS)) {
             return defaultIconPath;
         }
@@ -128,7 +121,6 @@ export default class HomeButtonExtension extends Extension {
     _updateIconPath() {
         const userIconPath = this._settings.get_string('icon-path');
         let iconPath;
-
         if (userIconPath === 'user-home-symbolic' || userIconPath === '') {
             iconPath = this._getDefaultIconPath();
         } else {
