@@ -9,7 +9,6 @@
     transition: all 0.15s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-/* Standard GNOME Shell hover states */
 #home-button-indicator:hover {
     background-color: rgba(255, 255, 255, 0.1);
     border-radius: 6px;
@@ -21,17 +20,13 @@
     transition: all 0.05s ease-out;
 }
 
-/* Icon styling to match GNOME Shell system status icons */
 #home-button-indicator .home-button-icon {
     margin: 0 12px;
     padding: 0;
     color: inherit;
-    
-    /* Icon transition for smooth switching */
     transition: opacity 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-/* Animation states for icon switching */
 #home-button-indicator .home-button-icon.fade-out {
     opacity: 0;
 }
@@ -40,7 +35,6 @@
     opacity: 1;
 }
 
-/* Ensure proper sizing and alignment like system-status-icon */
 #home-button-indicator .system-status-icon {
     icon-size: 1em;
 }
