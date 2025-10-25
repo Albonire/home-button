@@ -1,4 +1,4 @@
-UUID = home-button@fabian.github.io
+UUID = home-button@Albonire.github.io
 
 SRC_DIR = $(UUID)
 
@@ -42,7 +42,7 @@ create-icon-dir:
 compile-schema:
 	@echo "Compiling schema configuration..."
 	@mkdir -p $(SCHEMA_DIR)
-	@cp schemas/$(SCHEMA_FILE) $(SCHEMA_DIR)/
+	@cp $(SRC_DIR)/schemas/$(SCHEMA_FILE) $(SCHEMA_DIR)/
 	@glib-compile-schemas $(SCHEMA_DIR)
 	@echo "Schema correctly compiled."
 
@@ -72,20 +72,9 @@ log:
 	@echo "Displaying GNOME Shell logs... (Presiona Ctrl+C para salir)"
 	@journalctl -f -o cat /usr/bin/gnome-shell
 
-zip: clean compile-schema
+zip: clean
 	@echo "Creating distribution zip: $(ZIP_FILE)"
-	@cd $(SRC_DIR) && zip -r ../$(ZIP_FILE) . -x "*.git*" "*LICENSE*" "*README.md*"
-	@mkdir -p temp-schemas
-	@cp schemas/$(SCHEMA_FILE) temp-schemas/
-	@cd temp-schemas && zip -r ../$(ZIP_FILE) $(SCHEMA_FILE)
-	@rm -rf temp-schemas
-	@echo "Bundling icons directory if it exists..."
-	@if [ -d "$(SRC_DIR)/icons" ]; then \
-	echo "Icons directory found, adding to zip..."; \
-	cd $(SRC_DIR) && zip -r ../$(ZIP_FILE) icons/; \
-	else \
-	echo "No icons directory found, skipping..."; \
-	fi
+	@cd $(SRC_DIR) && zip -r ../$(ZIP_FILE) . -x "*/.git*" "*LICENSE*" "*README.md*"
 	@echo "Zip created in $(ZIP_FILE)"
 
 clean:
