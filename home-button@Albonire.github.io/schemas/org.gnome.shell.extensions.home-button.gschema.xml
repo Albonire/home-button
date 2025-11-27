@@ -8,7 +8,7 @@
         <choice value="center"/>
         <choice value="right"/>
       </choices>
-      <default>"right"</default>
+      <default>'right'</default>
       <summary>Button position in panel</summary>
       <description>Position where the home button will be placed in the top panel</description>
     </key>

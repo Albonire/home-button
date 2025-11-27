@@ -1,6 +1,6 @@
 
 #home-button-indicator {
-    -natural-hpadding: 12px;
+    -natural-hpadding: 6px;
     -minimum-hpadding: 6px;
     background: transparent;
     border: none;
@@ -21,7 +21,7 @@
 }
 
 #home-button-indicator .home-button-icon {
-    margin: 0 12px;
+    margin: 0 6px;
     padding: 0;
     color: inherit;
     transition: opacity 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -37,6 +37,12 @@
 
 #home-button-indicator .system-status-icon {
     icon-size: 1em;
+}
+
+/* Debugging helper - set visible background when HOME_BUTTON_DEBUG set in environment */
+#home-button-indicator.debug-visible {
+    background-color: rgba(255, 0, 0, 0.08);
+    outline: 1px solid rgba(255, 0, 0, 0.18);
 }
 
 /* State-specific styling for minimized mode */

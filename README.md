@@ -27,7 +27,7 @@ Home Button is a smart desktop toggle extension for GNOME Shell that adds a conv
 
 ---
 
-## 📋 Requirements
+## Requirements
 
 - GNOME Shell 45 or later
 - GJS (GNOME JavaScript bindings)
@@ -57,7 +57,7 @@ make enable
 
 ```bash
 # Copy extension files
-cp -r home-button@fabian.github.io ~/.local/share/gnome-shell/extensions/
+cp -r home-button@Albonire.github.io ~/.local/share/gnome-shell/extensions/
 
 # Copy and compile schema
 mkdir -p ~/.local/share/glib-2.0/schemas
@@ -65,7 +65,7 @@ cp schemas/org.gnome.shell.extensions.home-button.gschema.xml ~/.local/share/gli
 glib-compile-schemas ~/.local/share/glib-2.0/schemas/
 
 # Enable the extension
-gnome-extensions enable home-button@fabian.github.io
+gnome-extensions enable home-button@Albonire.github.io
 ```
 
 ---
@@ -77,7 +77,7 @@ Open the preferences window to customize the extension:
 ```bash
 make prefs
 # or
-gnome-extensions prefs home-button@fabian.github.io
+gnome-extensions prefs home-button@Albonire.github.io
 ```
 
 ### Available Settings
@@ -103,7 +103,7 @@ gnome-extensions prefs home-button@fabian.github.io
 
 ---
 
-## 🛠️ Development
+## Development
 
 ### Available Make Commands
 
@@ -123,7 +123,7 @@ make clean          # Remove generated files
 
 ```
 home-button/
-├── home-button@fabian.github.io/
+├── home-button@Albonire.github.io/
 │   ├── extension.js      # Main extension logic
 │   ├── prefs.js          # Preferences UI
 │   └── stylesheet.css    # Button styling
@@ -144,6 +144,30 @@ make log
 journalctl -f -o cat /usr/bin/gnome-shell
 ``` [13](#0-12) 
 
+### Troubleshooting: missing `gschemas.compiled`
+If the extension does not appear and you see errors such as:
+
+```
+GLib.FileError: Failed to open file "/home/<user>/.local/share/gnome-shell/extensions/home-button@Albonire.github.io/schemas/gschemas.compiled"
+```
+
+It means the extension's GSettings schema was not compiled or is not accessible in the places that GNOME Shell expects. To fix this, use `make install` (recommended) to both compile the XML schema and copy the compiled schema into the extension's `schemas/` folder, or use the commands below to compile and copy manually:
+
+```bash
+# Copy xml into the user schema directory and compile it there
+mkdir -p ~/.local/share/glib-2.0/schemas
+cp schemas/org.gnome.shell.extensions.home-button.gschema.xml ~/.local/share/glib-2.0/schemas/
+glib-compile-schemas ~/.local/share/glib-2.0/schemas/
+
+# Also compile the extension-local schema and copy it to the extension's installed schemas folder
+glib-compile-schemas ./schemas
+cp ./schemas/gschemas.compiled ~/.local/share/gnome-shell/extensions/home-button@Albonire.github.io/schemas/
+
+# Then reload the shell (Alt+F2 → r) or log out/in
+```
+
+This fixes the `GLib.FileError` by ensuring `gschemas.compiled` exists where GNOME Shell checks.
+
 ---
 
 ## Contributing
@@ -152,7 +176,7 @@ Contributions are welcome! Please feel free to submit pull requests or open issu
 
 ---
 
-## 📄 License
+## License
 
 This project is open source. Please check the repository for license details.
 
@@ -170,7 +194,7 @@ This README is based on the current codebase structure. The extension provides c
 
 ### Citations
 
-**File:** home-button@fabian.github.io/extension.js (L1-18)
+**File:** home-button@Albonire.github.io/extension.js (L1-18)
 ```javascript
 'use strict';
 
@@ -192,7 +216,7 @@ export default class HomeButtonExtension extends Extension {
     }
 ```
 
-**File:** home-button@fabian.github.io/extension.js (L20-35)
+**File:** home-button@Albonire.github.io/extension.js (L20-35)
 ```javascript
     _updateState() {
         const hasMinimized = this._minimizedWindows.length > 0;
@@ -212,14 +236,14 @@ export default class HomeButtonExtension extends Extension {
     }
 ```
 
-**File:** home-button@fabian.github.io/extension.js (L41-133)
+**File:** home-button@Albonire.github.io/extension.js (L41-133)
 ```javascript
 _toggleWindows() {
     console.log("🚀 Home-Button: _toggleWindows() iniciado");
     
     try {
         if (this._minimizedWindows.length > 0) {
-            console.log(`📤 Restaurando ${this._minimizedWindows.length} ventanas`);
+            console.log(`Restaurando ${this._minimizedWindows.length} ventanas`);
             [...this._minimizedWindows].reverse().forEach((window, index) => {
                 if (window.get_workspace()) {
                     console.log(`  Restaurando: ${window.get_title()}`);
@@ -229,7 +253,7 @@ _toggleWindows() {
             });
             this._minimizedWindows = [];
         } else {
-            console.log("📥 Iniciando minimización...");
+            console.log("Iniciando minimización...");
             
             const workspaceManager = global.workspace_manager;
             const includeAllWorkspaces = this._settings.get_boolean('include-all-workspaces');
@@ -257,7 +281,7 @@ _toggleWindows() {
             // filters
             this._minimizedWindows = windowsToConsider.filter(w => {
                 if (!w) {
-                    console.log("   ❌ Null window");
+                    console.log("   Null window");
                     return false;
                 }
                 
@@ -267,18 +291,18 @@ _toggleWindows() {
                 console.log(`   🔍 Parsing: "${title}" - Minimized: ${isMinimized}`);
                 
                 if (isMinimized) {
-                    console.log(`   ⏭️  Skipping "${title}" (already minimized)`);
+                    console.log(`   Skipping "${title}" (already minimized)`);
                     return false;
                 }
                 
-                console.log(`   ✅ "${title}" will be minimized`);
+                console.log(`   "${title}" will be minimized`);
                 return true;
             });
 
-            console.log(`🎯 Windows to minimize: ${this._minimizedWindows.length}`);
+            console.log(`Windows to minimize: ${this._minimizedWindows.length}`);
 
             if (this._minimizedWindows.length === 0) {
-                console.log("⚠️  No windows to minimize.");
+                console.log("No windows to minimize.");
             } else {
                 // MINIMIZATION simple
                 this._minimizedWindows.forEach((window, index) => {
@@ -287,16 +311,16 @@ _toggleWindows() {
                     
                     try {
                         window.minimize();
-                        console.log(`    ✅ "${title}" correctly minimized`);
+                        console.log(`    "${title}" correctly minimized`);
                     } catch (error) {
-                        console.log(`    ❌ Error minimizing "${title}": ${error}`);
+                        console.log(`    Error minimizing "${title}": ${error}`);
                     }
                 });
             }
         }
     } catch (e) {
-        console.error(`🚨 Home-Button Extension: Error en _toggleWindows(): ${e}`);
-        console.error(`🚨 Stack trace: ${e.stack}`);
+        console.error(`Home-Button Extension: Error en _toggleWindows(): ${e}`);
+        console.error(`Stack trace: ${e.stack}`);
         this._minimizedWindows = [];
     }
     
@@ -309,17 +333,17 @@ _toggleWindows() {
 }
 ```
 
-**File:** home-button@fabian.github.io/extension.js (L212-327)
+**File:** home-button@Albonire.github.io/extension.js (L212-327)
 ```javascript
 enable() {
-    console.log("🚀 Home Button Extension enabled");
+    console.log("Home Button Extension enabled");
     
     try {
-        console.log("📋 Loading settings...");
+        console.log("Loading settings...");
         this._settings = this.getSettings();
-        console.log("✅ Settings loaded");
+        console.log("Settings loaded");
 
-        console.log("🎨 Creating indicator...");
+        console.log("Creating indicator...");
         this._indicator = new St.Bin({
             reactive: true,
             can_focus: true,
@@ -327,48 +351,48 @@ enable() {
             name: 'home-button-indicator',
             style_class: 'panel-button',
         });
-        console.log("✅ Indicator created");
+        console.log("Indicator created");
 
-        console.log("🖼️ Creating icon...");
+        console.log("Creating icon...");
         this._icon = new St.Icon({
             style_class: 'home-button-icon',
         });
-        console.log("✅ Icon created");
+        console.log("Icon created");
 
         this._indicator.set_child(this._icon);
-        console.log("✅ Icon added to indicator");
+        console.log("Icon added to indicator");
 
-        console.log("🖱️ Connecting event listeners...");
+        console.log("Connecting event listeners...");
         
         const buttonPressConnection = this._indicator.connect('button-press-event', (actor, event) => {
-            console.log("🖱️ Button pressed");
+            console.log("   Button pressed");
             console.log(`   Button: ${event.get_button()}`);
             console.log(`   Primary button: ${Clutter.BUTTON_PRIMARY}`);
             
             if (event.get_button() === Clutter.BUTTON_PRIMARY) {
-                console.log("✅ Click valid - executing _toggleWindows()");
+                console.log(" Click valid - executing _toggleWindows()");
                 this._toggleWindows();
                 return Clutter.EVENT_STOP;
             } else {
-                console.log("⏭️ Click ignored (not primary button)");
+                console.log(" Click ignored (not primary button)");
             }
             return Clutter.EVENT_PROPAGATE;
         });
-        console.log(`✅ Button-press-event conected (ID: ${buttonPressConnection})`);
+        console.log(` Button-press-event conected (ID: ${buttonPressConnection})`);
 
         const keyPressConnection = this._indicator.connect('key-press-event', (actor, event) => {
-            console.log("⌨️ key pressed");
+            console.log(" key pressed");
             const symbol = event.get_key_symbol();
             console.log(`   Key: ${symbol}`);
             
             if (symbol === Clutter.KEY_Return || symbol === Clutter.KEY_space) {
-                console.log("✅ Valid key - executing _toggleWindows()");
+                console.log(" Valid key - executing _toggleWindows()");
                 this._toggleWindows();
                 return Clutter.EVENT_STOP;
             }
             return Clutter.EVENT_PROPAGATE;
         });
-        console.log(`✅ Key-press-event conected (ID: ${keyPressConnection})`);
+        console.log(` Key-press-event conected (ID: ${keyPressConnection})`);
 
         this._indicator.connect('enter-event', () => {
             console.log(" Mouse entered the button");
@@ -416,9 +440,9 @@ enable() {
             
             // funcionality test
             if (this._indicator && this._indicator.reactive) {
-                console.log("✅ Indicator is reactive and ready for clicks");
+                console.log(" Indicator is reactive and ready for clicks");
             } else {
-                console.log("❌ PROBLEM: Indicator is not reactive");
+                console.log(" PROBLEM: Indicator is not reactive");
             }
         }, 2000);
         
@@ -495,7 +519,7 @@ enable() {
 # Makefile para el desarrollo de la Extensión de GNOME Shell "Home Button"
 
 # El UUID es el identificador único. ¡Debe coincidir con metadata.json y el nombre del directorio!
-UUID = home-button@fabian.github.io
+UUID = home-button@Albonire.github.io
 
 # Directorio fuente del proyecto
 SRC_DIR = $(UUID)
@@ -556,7 +580,7 @@ log:
 	@journalctl -f -o cat /usr/bin/gnome-shell
 ```
 
-**File:** home-button@fabian.github.io/prefs.js (L10-100)
+**File:** home-button@Albonire.github.io/prefs.js (L10-100)
 ```javascript
 export default class HomeButtonPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
@@ -629,7 +653,7 @@ export default class HomeButtonPreferences extends ExtensionPreferences {
         });
         behaviorGroup.add(animationDelayRow);
 
-        // Incluir todos los workspaces
+        // Include all workspaces
         const allWorkspacesRow = new Adw.SwitchRow({
             title: 'All Workspaces',
             subtitle: 'Minimize/restore windows from all workspaces instead of just current',

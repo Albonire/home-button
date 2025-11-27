@@ -40,21 +40,34 @@ create-icon-dir:
 	@echo "Place your home-symbolic.svg file there for the default icon."
 
 compile-schema:
-	@echo "Compiling schema configuration..."
+	@echo "Compiling schema configuration for system and extension directories..."
 	@mkdir -p $(SCHEMA_DIR)
 	@cp $(SRC_DIR)/schemas/$(SCHEMA_FILE) $(SCHEMA_DIR)/
 	@glib-compile-schemas $(SCHEMA_DIR)
-	@echo "Schema correctly compiled."
+	@echo "Global schema compilation completed."
+
+	@echo "Compiling schema inside the extension folder to produce local gschemas.compiled..."
+	@glib-compile-schemas $(SRC_DIR)/schemas
+	@echo "Local extension schema compilation completed."
 
 install: uninstall compile-schema
 	@echo "Installing extension in: $(INSTALL_DIR)"
 	@cp -r $(SRC_DIR) $(INSTALL_DIR)
+	@mkdir -p $(INSTALL_DIR)/schemas
+	@# If local gschemas.compiled exists after compiling, copy it into the installed extension
+	@if [ -f $(SRC_DIR)/schemas/gschemas.compiled ]; then \
+		cp $(SRC_DIR)/schemas/gschemas.compiled $(INSTALL_DIR)/schemas/; \
+	fi
 	@echo "¡Installation complete!"
 	@echo "To apply the changes, reload GNOME Shell (Alt+F2, 'r', Enter - on x11, or manual reload otherwise) and activate the extension with 'make enable'."
 
 uninstall:
 	@echo "Removing previous installation if it exists..."
 	@rm -rf $(INSTALL_DIR)
+	@echo "Removing per-user compiled schemas used for the extension..."
+	@if [ -f $(SCHEMA_DIR)/gschemas.compiled ]; then \
+		glib-compile-schemas $(SCHEMA_DIR) > /dev/null 2>&1 || true; \
+	fi
 
 enable:
 	@echo "Activating extension: $(UUID)"

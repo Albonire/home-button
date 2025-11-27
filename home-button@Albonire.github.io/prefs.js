@@ -7,7 +7,19 @@ import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/
 
 export default class HomeButtonPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
-        this._settings = this.getSettings();
+        try {
+            this._settings = this.getSettings();
+        } catch (e) {
+            // If the schema is not compiled/installed, show a helpful message in the prefs
+            log(`Home Button Preferences: Failed to load settings: ${e}`);
+            const page = new Adw.PreferencesPage();
+            window.add(page);
+            const errorGroup = new Adw.PreferencesGroup({ title: 'Settings unavailable' });
+            page.add(errorGroup);
+            const errorMessage = new Adw.ActionRow({ title: 'Unable to load settings', subtitle: 'Please run make install or run glib-compile-schemas for your user schemas.' });
+            errorGroup.add(errorMessage);
+            return;
+        }
         this._window = window;
 
         const page = new Adw.PreferencesPage();
