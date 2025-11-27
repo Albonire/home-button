@@ -8,22 +8,12 @@ import Clutter from 'gi://Clutter';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-log('Home Button Extension: module loaded');
-try {
-    GLib.file_set_contents('/tmp/home-button-module-loaded', 'module loaded\n');
-} catch (e) {
-    log(`Home Button Extension: failed to write module marker: ${e}`);
-}
+// Module loaded - debug markers removed for production
 
 export default class HomeButtonExtension extends Extension {
     constructor(metadata) {
         super(metadata);
-        log('Home Button Extension: constructor called');
-        try {
-            GLib.file_set_contents('/tmp/home-button-constructor', 'constructor called\n');
-        } catch (e) {
-            log(`Home Button Extension: failed to write constructor marker: ${e}`);
-        }
+        // constructor executed; debug markers removed
         this._indicator = null;
         this._icon = null;
         this._minimizedWindows = [];
@@ -41,12 +31,7 @@ export default class HomeButtonExtension extends Extension {
     }
 
     enable() {
-        log('Home Button Extension: enable start');
-        try {
-            GLib.file_set_contents('/tmp/home-button-enable', 'enable start\n');
-        } catch (e) {
-            log(`Home Button Extension: failed to write enable marker: ${e}`);
-        }
+        // enable started; debug markers removed
         try {
             this._settings = this.getSettings();
             log('Home Button Extension: settings loaded successfully');
@@ -81,15 +66,7 @@ export default class HomeButtonExtension extends Extension {
         });
 
         this._settingsConnections = new Map();
-        // Add an optional debug style for visual testing if HOME_BUTTON_DEBUG environment var is set
-        try {
-            if (GLib.getenv('HOME_BUTTON_DEBUG')) {
-                this._indicator.add_style_class_name('debug-visible');
-                log('Home Button Extension: DEBUG visual enabled via HOME_BUTTON_DEBUG');
-            }
-        } catch (e) {
-            // no-op
-        }
+        // debug visual removed
         this._connectSettings();
         // Apply icon size and path before adding to panel to avoid ghost state.
         this._updateIconSize();
@@ -105,7 +82,7 @@ export default class HomeButtonExtension extends Extension {
         }
         this._addToPanel();
         this._updateState();
-        log('Home Button Extension: enable complete');
+        // enable complete
     }
 
     disable() {
