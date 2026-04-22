@@ -3,6 +3,7 @@
 import Adw from 'gi://Adw';
 import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
+import GdkPixbuf from 'gi://GdkPixbuf';
 import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 export default class HomeButtonPreferences extends ExtensionPreferences {
@@ -37,13 +38,25 @@ export default class HomeButtonPreferences extends ExtensionPreferences {
         });
         appearanceGroup.add(iconRow);
 
+        const iconPreview = new Gtk.Image({
+            icon_name: 'user-home-symbolic',
+            pixel_size: 24,
+            valign: Gtk.Align.CENTER,
+            margin_start: 12,
+            css_classes: ['icon-preview'],
+        });
+        iconRow.add_prefix(iconPreview);
+
         const iconButton = new Gtk.Button({
             label: 'Browse...',
             valign: Gtk.Align.CENTER,
         });
         iconRow.add_suffix(iconButton);
         iconRow.activatable_widget = iconButton;
-        iconButton.connect('clicked', () => this._selectIcon());
+        iconButton.connect('clicked', () => this._selectIcon(iconPreview));
+
+        const iconPath = this._settings.get_string('icon-path');
+        this._updateIconPreview(iconPreview, iconPath);
 
         const iconSizeRow = new Adw.SpinRow({
             title: 'Icon Size',
@@ -147,7 +160,7 @@ export default class HomeButtonPreferences extends ExtensionPreferences {
         });
     }
 
-    _selectIcon() {
+    _selectIcon(iconPreview) {
         const dialog = new Gtk.FileChooserDialog({
             title: 'Select an Icon',
             transient_for: this._window,
@@ -161,11 +174,35 @@ export default class HomeButtonPreferences extends ExtensionPreferences {
         dialog.add_button('Select', Gtk.ResponseType.ACCEPT);
         dialog.connect('response', (dlg, response) => {
             if (response === Gtk.ResponseType.ACCEPT) {
-                this._settings.set_string('icon-path', dialog.get_file().get_path());
+                const filePath = dialog.get_file().get_path();
+                this._settings.set_string('icon-path', filePath);
+                this._updateIconPreview(iconPreview, filePath);
             }
             dialog.destroy();
         });
         dialog.show();
+    }
+
+    _updateIconPreview(iconPreview, iconPath = null) {
+        if (!iconPath) {
+            iconPath = this._settings.get_string('icon-path');
+        }
+
+        if (iconPath === 'user-home-symbolic' || iconPath === '') {
+            iconPreview.set_from_icon_name('user-home-symbolic');
+            iconPreview.pixel_size = 24;
+        } else if (Gio.file_test(iconPath, Gio.FileTest.EXISTS)) {
+            try {
+                const file = Gio.File.new_for_path(iconPath);
+                const pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(iconPath, 24, 24, true);
+                iconPreview.set_from_pixbuf(pixbuf);
+            } catch (e) {
+                log(`Home Button Preferences: Failed to load icon preview: ${e}`);
+                iconPreview.set_from_icon_name('image-missing-symbolic');
+            }
+        } else {
+            iconPreview.set_from_icon_name('image-missing-symbolic');
+        }
     }
 
     _showResetDialog() {
