@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<!-- ==================================================================
+     HOME BUTTON · DOCUMENTACIÓN TÉCNICA · Sistema kami
+     White Paper / Informe Técnico de Arquitectura
+     ================================================================== -->
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Home Button · Documentación Técnica</title>
+<style>
+  @font-face { font-family: "Newsreader"; src: url("fonts/Newsreader.woff2") format("woff2"); font-weight: 400; font-style: normal; }
+  @font-face { font-family: "Newsreader"; src: url("fonts/Newsreader.woff2") format("woff2"); font-weight: 500; font-style: normal; }
+  @font-face { font-family: "Inter"; src: url("fonts/Inter.woff2") format("woff2"); font-weight: 400; font-style: normal; }
+  @font-face { font-family: "Inter"; src: url("fonts/Inter-500.woff2") format("woff2"); font-weight: 500; font-style: normal; }
+  @font-face { font-family: "Inter"; src: url("fonts/Inter-600.woff2") format("woff2"); font-weight: 600; font-style: normal; }
+  @font-face { font-family: "JetBrains Mono"; src: url("fonts/JetBrainsMono.woff2") format("woff2"); font-weight: 400; font-style: normal; }
+  @font-face { font-family: "JetBrains Mono"; src: url("fonts/JetBrainsMono.woff2") format("woff2"); font-weight: 500; font-style: normal; }
+
+  @page {
+    size: A4;
+    margin: 20mm 22mm 22mm 22mm;
+    background: #f5f4ed;
+
+    @bottom-center {
+      content: counter(page) "  ·  Home Button · Documentación Técnica";
+      font-family: "Newsreader", serif;
+      font-size: 8.5pt;
+      color: #87867f;
+    }
+  }
+  @page:first { @bottom-center { content: ""; } }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --parchment: #f5f4ed;
+    --ivory:     #faf9f5;
+    --near-black:#141413;
+    --dark-warm: #3d3d3a;
+    --charcoal:  #4d4c48;
+    --olive:     #5e5d59;
+    --stone:     #87867f;
+    --brand:     #1B365D;
+    --border:    #e8e6dc;
+    --border-soft:#e5e3d8;
+    --tag-bg:    #E4ECF5;
+
+    --serif: "Newsreader", serif;
+    --sans:  "Inter", sans-serif;
+    --mono:  "JetBrains Mono", monospace;
+  }
+
+  html, body { background: var(--parchment); }
+
+  body {
+    color: var(--near-black);
+    font-family: var(--serif);
+    font-size: 10.5pt;
+    line-height: 1.55;
+  }
+
+  .sans { font-family: var(--sans); }
+
+  /* COVER */
+  .cover {
+    min-height: 240mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 40mm 0 0 0;
+    break-after: page;
+  }
+  .cover-eyebrow {
+    font-family: var(--sans);
+    font-size: 10pt;
+    color: var(--brand);
+    letter-spacing: 2pt;
+    text-transform: uppercase;
+    font-weight: 500;
+    margin-bottom: 18pt;
+  }
+  .cover-title {
+    font-size: 40pt;
+    font-weight: 500;
+    color: var(--near-black);
+    line-height: 1.12;
+    letter-spacing: -0.5pt;
+    margin-bottom: 16pt;
+  }
+  .cover-sub {
+    font-family: var(--sans);
+    font-size: 14pt;
+    color: var(--olive);
+    line-height: 1.45;
+    max-width: 85%;
+    margin-bottom: 30pt;
+  }
+  .cover-meta {
+    font-family: var(--sans);
+    font-size: 10pt;
+    color: var(--stone);
+    line-height: 1.55;
+    font-variant-numeric: tabular-nums;
+  }
+  .cover-meta strong { color: var(--dark-warm); font-weight: 500; }
+
+  /* TOC */
+  .toc { break-after: page; }
+  .toc h2 {
+    font-size: 22pt;
+    font-weight: 500;
+    margin-bottom: 14pt;
+    border-left: 2.5pt solid var(--brand);
+    border-radius: 1.5pt;
+    padding-left: 8pt;
+  }
+  .toc-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 6pt 0;
+    border-bottom: 0.3pt dotted var(--border);
+    font-size: 11pt;
+  }
+  .toc-num {
+    color: var(--brand);
+    font-weight: 500;
+    min-width: 30pt;
+    font-variant-numeric: tabular-nums;
+  }
+  .toc-title {
+    flex: 1;
+    color: var(--near-black);
+    padding-left: 6pt;
+  }
+  .toc-page {
+    color: var(--stone);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* HEADINGS */
+  h1 {
+    font-size: 24pt;
+    font-weight: 500;
+    line-height: 1.15;
+    letter-spacing: -0.3pt;
+    margin: 0 0 10pt 0;
+    border-left: 2.5pt solid var(--brand);
+    border-radius: 1.5pt;
+    padding-left: 8pt;
+    color: var(--near-black);
+    break-after: avoid;
+  }
+  h2 {
+    font-size: 15pt;
+    font-weight: 500;
+    line-height: 1.25;
+    margin: 24pt 0 6pt 0;
+    color: var(--near-black);
+    break-after: avoid;
+  }
+  h3 {
+    font-size: 12pt;
+    font-weight: 500;
+    line-height: 1.3;
+    margin: 18pt 0 4pt 0;
+    color: var(--dark-warm);
+    break-after: avoid;
+  }
+
+  .chapter-num {
+    font-family: var(--sans);
+    font-size: 10pt;
+    color: var(--brand);
+    letter-spacing: 2pt;
+    text-transform: uppercase;
+    font-weight: 500;
+    margin-bottom: 6pt;
+  }
+
+  /* PARAGRAPHS */
+  p { margin: 0 0 10pt 0; line-height: 1.55; color: var(--near-black); }
+
+  .lead {
+    font-size: 12pt;
+    line-height: 1.55;
+    color: var(--dark-warm);
+    margin-bottom: 14pt;
+  }
+
+  .hl { color: var(--brand); font-weight: 500; }
+
+  /* LISTS */
+  ul, ol {
+    margin: 6pt 0 10pt 0;
+    padding-left: 20pt;
+    line-height: 1.55;
+  }
+  ul li::marker { color: var(--brand); }
+  ol li::marker { color: var(--brand); font-weight: 500; }
+
+  /* QUOTE */
+  blockquote, .quote {
+    border-left: 2pt solid var(--brand);
+    margin: 12pt 0;
+    padding: 4pt 0 4pt 16pt;
+    color: var(--olive);
+    line-height: 1.55;
+    break-inside: avoid;
+  }
+  blockquote .cite, .quote .cite {
+    display: block;
+    font-family: var(--sans);
+    font-size: 9pt;
+    color: var(--stone);
+    margin-top: 4pt;
+  }
+
+  /* CODE */
+  code {
+    font-family: var(--mono);
+    font-size: 9pt;
+    background: var(--ivory);
+    padding: 1pt 4pt;
+    border-radius: 2pt;
+    color: var(--dark-warm);
+  }
+  pre {
+    font-family: var(--mono);
+    font-size: 8.5pt;
+    line-height: 1.5;
+    background: var(--ivory);
+    border: 0.5pt solid var(--border-soft);
+    border-radius: 4pt;
+    padding: 10pt 14pt;
+    margin: 10pt 0;
+    white-space: pre-wrap;
+    color: var(--near-black);
+    break-inside: avoid;
+  }
+  pre code { background: transparent; padding: 0; font-size: inherit; }
+
+  /* TABLE */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9.5pt;
+    margin: 12pt 0;
+    break-inside: avoid;
+  }
+  table th {
+    text-align: left;
+    font-family: var(--sans);
+    font-weight: 500;
+    color: var(--charcoal);
+    padding: 6pt 8pt;
+    border-bottom: 1pt solid var(--brand);
+    background: var(--ivory);
+  }
+  table td {
+    padding: 5pt 8pt;
+    border-bottom: 0.3pt solid var(--border-soft);
+    vertical-align: top;
+  }
+
+  /* CALLOUT / TAKEAWAY */
+  .callout {
+    background: var(--ivory);
+    border-left: 2pt solid var(--brand);
+    padding: 10pt 14pt;
+    border-radius: 3pt;
+    margin: 12pt 0;
+    line-height: 1.55;
+    break-inside: avoid;
+  }
+  .takeaway {
+    background: var(--ivory);
+    border: 0.5pt solid var(--border);
+    border-radius: 4pt;
+    padding: 10pt 14pt;
+    margin: 14pt 0;
+    break-inside: avoid;
+  }
+  .takeaway-label {
+    font-family: var(--sans);
+    font-size: 8pt;
+    color: var(--brand);
+    letter-spacing: 1pt;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 4pt;
+  }
+
+  /* TAG */
+  .tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--brand);
+    font-family: var(--sans);
+    font-size: 8pt;
+    font-weight: 600;
+    padding: 1pt 6pt;
+    border-radius: 3pt;
+    letter-spacing: 0.4pt;
+    text-transform: uppercase;
+    margin-right: 4pt;
+  }
+
+  /* FIGURE */
+  figure { margin: 14pt 0; break-inside: avoid; }
+  figure img { max-width: 100%; border-radius: 4pt; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  figcaption {
+    font-family: var(--sans);
+    font-size: 9pt;
+    color: var(--stone);
+    margin-top: 6pt;
+    text-align: center;
+  }
+
+  /* CHAPTER BREAK */
+  .chapter { break-before: page; }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<section class="cover">
+  <div>
+    <div class="cover-eyebrow">Informe Técnico · GNOME Shell Extension</div>
+    <div class="cover-title">Home Button<br>Arquitectura de Sistema</div>
+    <div class="cover-sub">Análisis exhaustivo del motor de gestión de ventanas y la integración con Mutter en entornos GNOME 45+.</div>
+    <figure style="margin-top: 20pt; text-align: left;">
+      <img src="images/mockup.png" alt="Home Button Mockup" style="max-width: 400px;">
+    </figure>
+  </div>
+  <div class="cover-meta">
+    <strong>Anderson González (Albonire)</strong><br>
+    Versión 2.0 · 2026.04<br>
+    Albonire GitHub Projects
+  </div>
+</section>
+
+<!-- TOC -->
+<section class="toc">
+  <h2>Contenido</h2>
+  <div class="toc-item"><span class="toc-num">01</span><span class="toc-title">Resumen Ejecutivo</span><span class="toc-page">03</span></div>
+  <div class="toc-item"><span class="toc-num">02</span><span class="toc-title">Arquitectura y Ciclo de Vida</span><span class="toc-page">04</span></div>
+  <div class="toc-item"><span class="toc-num">03</span><span class="toc-title">Motor de Gestión de Ventanas</span><span class="toc-page">06</span></div>
+  <div class="toc-item"><span class="toc-num">04</span><span class="toc-title">Integración y Configuración</span><span class="toc-page">09</span></div>
+  <div class="toc-item"><span class="toc-num">05</span><span class="toc-title">Apéndice</span><span class="toc-page">11</span></div>
+</section>
+
+<!-- Chapter 01 -->
+<section>
+  <div class="chapter-num">01 · Resumen Ejecutivo</div>
+  <h1>Resumen Ejecutivo</h1>
+
+  <p class="lead">
+    Home Button no es simplemente un acceso directo al escritorio; es una solución de <span class="hl">gestión de estados de ventana</span> diseñada para optimizar el flujo de trabajo en GNOME Shell. Al implementar una lógica de restauración inteligente, la extensión permite una transición fluida entre el modo de enfoque y la visibilidad total del escritorio.
+  </p>
+
+  <h2>Puntos Clave</h2>
+  <ul>
+    <li><span class="hl">Restauración Inteligente</span>: A diferencia de los métodos convencionales, Home Button prioriza el enfoque de la última ventana activa al restaurar el estado anterior.</li>
+    <li><span class="hl">Integración Nativa</span>: Construido sobre GJS y las APIs nativas de Meta y St, garantizando un rendimiento óptimo y una estética coherente con Adwaita.</li>
+    <li><span class="hl">Personalización Avanzada</span>: Control total sobre el posicionamiento en el panel, animaciones y comportamiento multiescritorio.</li>
+  </ul>
+
+  <div class="takeaway">
+    <div class="takeaway-label">Preguntas que resuelve este documento</div>
+    <ul>
+      <li>¿Cómo interactúa la extensión con el gestor de ventanas Mutter (Meta)?</li>
+      <li>¿Cuál es el algoritmo utilizado para filtrar y almacenar el estado de las ventanas?</li>
+      <li>¿Cómo se gestiona el feedback visual mediante animaciones asíncronas?</li>
+    </ul>
+  </div>
+</section>
+
+<!-- Chapter 02 -->
+<section class="chapter">
+  <div class="chapter-num">02 · Arquitectura</div>
+  <h1>Arquitectura y Ciclo de Vida</h1>
+
+  <p class="lead">
+    La extensión opera como un módulo inyectado en el proceso principal de GNOME Shell, utilizando el sistema de clases introducido en GNOME 45.
+  </p>
+
+  <h2>Diagrama de Arquitectura</h2>
+  <figure>
+    <svg viewBox="0 0 960 460" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+          <circle cx="1" cy="1" r="0.9" fill="rgba(20,20,19,0.08)"/>
+        </pattern>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#5e5d59"/>
+        </marker>
+        <marker id="arrow-brand" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#1B365D"/>
+        </marker>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#f5f4ed"/>
+      <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
+
+      <!-- Arrows -->
+      <line x1="168" y1="240" x2="220" y2="240" stroke="#5e5d59" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="412" y1="240" x2="456" y2="240" stroke="#1B365D" stroke-width="1.4" marker-end="url(#arrow-brand)"/>
+      <line x1="616" y1="240" x2="704" y2="240" stroke="#5e5d59" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="536" y1="272" x2="536" y2="320" stroke="#5e5d59" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+      <!-- Labels -->
+      <text x="194" y="230" fill="#5e5d59" font-size="8" font-family="'JetBrains Mono', monospace" text-anchor="middle">CLICK</text>
+      <text x="434" y="230" fill="#1B365D" font-size="8" font-family="'JetBrains Mono', monospace" text-anchor="middle">JS API</text>
+      <text x="660" y="230" fill="#5e5d59" font-size="8" font-family="'JetBrains Mono', monospace" text-anchor="middle">MUTTER</text>
+
+      <!-- Nodes -->
+      <rect x="40" y="208" width="128" height="64" rx="6" fill="rgba(94,93,89,0.08)" stroke="#87867f" stroke-width="1"/>
+      <text x="104" y="246" fill="#141413" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Usuario</text>
+      
+      <rect x="220" y="208" width="192" height="64" rx="6" fill="#EEF2F7" stroke="#1B365D" stroke-width="1"/>
+      <text x="316" y="246" fill="#141413" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">HomeButtonExtension</text>
+      <text x="316" y="262" fill="#5e5d59" font-size="8" font-family="'JetBrains Mono', monospace" text-anchor="middle">Logic &amp; State</text>
+
+      <rect x="456" y="208" width="160" height="64" rx="6" fill="rgba(20,20,19,0.03)" stroke="rgba(20,20,19,0.30)" stroke-width="1"/>
+      <text x="536" y="246" fill="#141413" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Shell / Meta</text>
+
+      <rect x="456" y="320" width="160" height="64" rx="6" fill="rgba(20,20,19,0.05)" stroke="#5e5d59" stroke-width="1"/>
+      <text x="536" y="358" fill="#141413" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">GSettings</text>
+
+      <rect x="704" y="208" width="144" height="64" rx="6" fill="#ffffff" stroke="#141413" stroke-width="1"/>
+      <text x="776" y="246" fill="#141413" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Ventanas</text>
+    </svg>
+    <figcaption>Figura 1. Flujo de datos y control. La extensión actúa como orquestador entre las señales del usuario y el gestor de ventanas.</figcaption>
+  </figure>
+
+  <h2>Módulos Clave</h2>
+  <p>La implementación se divide en tres pilares fundamentales:</p>
+  <ul>
+    <li><strong>UI (St)</strong>: Gestión del indicador en el panel, Tooltips dinámicos y cambios de íconos.</li>
+    <li><strong>Lógica de Ventanas (Meta)</strong>: Filtrado de ventanas tipo <code>NORMAL</code>, manejo de workspaces y minimización.</li>
+    <li><strong>Configuración (Gio)</strong>: Persistencia de preferencias mediante esquemas XML compilados.</li>
+  </ul>
+
+  <div class="callout">
+    El uso de <code>import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js'</code> permite una encapsulación limpia y acceso seguro a los recursos del sistema.
+  </div>
+</section>
+
+<!-- Chapter 03 -->
+<section class="chapter">
+  <div class="chapter-num">03 · Motor de Ventanas</div>
+  <h1>Motor de Gestión de Ventanas</h1>
+
+  <p class="lead">El núcleo de Home Button es su capacidad para capturar y restaurar el estado del escritorio de forma no destructiva.</p>
+
+  <h2>Filtrado Inteligente</h2>
+  <p>Para evitar minimizar ventanas de sistema o paneles flotantes, se aplica un filtro riguroso:</p>
+  <pre><code>this._minimizedWindows = windowsToFilter.filter(w =>
+    w && w.get_compositor_private() && 
+    w.can_minimize() && 
+    !w.minimized && 
+    !w.is_skip_taskbar() &&
+    w.get_window_type() === Meta.WindowType.NORMAL &&
+    !(excludeOnTop && w.is_above())
+);</code></pre>
+
+  <h2>Lógica de Restauración</h2>
+  <p>Al restaurar, la extensión no solo des-minimiza; utiliza un sistema de <span class="hl">Smart Focus</span> que analiza los <code>userTime</code> de cada ventana para identificar cuál debe recibir el foco de entrada.</p>
+
+  <h3>Algoritmo de Foco</h3>
+  <ol>
+    <li>Verificar si la última ventana con foco sigue siendo válida.</li>
+    <li>Si no, buscar en el historial de estados capturados (<code>_windowStates</code>).</li>
+    <li>Como último recurso, seleccionar la ventana con el mayor <code>user_time</code>.</li>
+  </ol>
+
+  <blockquote>
+    "La gestión de ventanas en entornos modernos requiere más que simples llamadas a API; requiere entender la intención del usuario."
+    <span class="cite">— Principio de Diseño, Home Button Documentation</span>
+  </blockquote>
+</section>
+
+<!-- Chapter 04 -->
+<section class="chapter">
+  <div class="chapter-num">04 · Integración</div>
+  <h1>Integración y Configuración</h1>
+
+  <p class="lead">La extensión se integra profundamente con el ecosistema de GNOME mediante GSettings y herramientas de desarrollo estándar.</p>
+
+  <h2>Esquemas de Configuración</h2>
+  <p>Utilizamos <code>gschema.xml</code> para definir tipos de datos estrictos (integers, doubles, enums), lo que garantiza la integridad de las preferencias del usuario.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Ajuste</th>
+        <th>Tipo</th>
+        <th>Por defecto</th>
+        <th>Descripción</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td><code>icon-size</code></td><td>Double</td><td>24.0</td><td>Tamaño del glifo en px.</td></tr>
+      <tr><td><code>animation-delay</code></td><td>Int</td><td>0</td><td>Retraso entre ventanas (ms).</td></tr>
+      <tr><td><code>button-position</code></td><td>String</td><td>"left"</td><td>Ubicación en el panel.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Feedback Visual (Animaciones)</h2>
+  <p>Home Button utiliza animaciones de opacidad y escala para proporcionar feedback inmediato al usuario.</p>
+  <pre><code>this._icon.ease({
+    opacity: 0,
+    duration: ANIMATION_DURATION / 2,
+    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+    onComplete: () => {
+        this._icon.set_gicon(newIcon);
+        this._icon.ease({ opacity: 255, ... });
+    }
+});</code></pre>
+</section>
+
+<!-- Chapter 05 -->
+<section class="chapter">
+  <div class="chapter-num">05 · Apéndice</div>
+  <h1>Apéndice</h1>
+
+  <h2>A. Glosario</h2>
+  <p><strong>Mutter (Meta)</strong> — El gestor de ventanas y compositor de GNOME Shell.</p>
+  <p><strong>GJS</strong> — El motor de JavaScript de GNOME basado en SpiderMonkey.</p>
+  <p><strong>St (Shell Toolkit)</strong> — El conjunto de widgets optimizado para el panel y menús de la Shell.</p>
+
+  <h2>B. Referencias</h2>
+  <ul>
+    <li>GNOME JavaScript API Documentation (v45+)</li>
+    <li>Mutter / Meta API Reference</li>
+    <li>GObject Introspection (GI) Manual</li>
+  </ul>
+
+  <div class="takeaway">
+    <div class="takeaway-label">Conclusión Final</div>
+    Home Button representa el equilibrio entre simplicidad funcional y profundidad técnica, proporcionando una herramienta esencial para la productividad en Linux.
+  </div>
+</section>
+
+</body>
+</html>
